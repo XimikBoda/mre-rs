@@ -6,3 +6,5 @@ pub mod macros;
 pub use macros::*;
 
 pub mod sys;
+
+pub mod alloc;
