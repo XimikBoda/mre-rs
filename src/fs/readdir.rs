@@ -43,8 +43,8 @@ impl Iterator for ReadDir {
             metadata: Metadata {
                 size: info.filesize,
                 attributes: FileAttributes(info.attributes),
-                created: info.create_datetime,
-                modified: info.modify_datetime,
+                created: info.create_datetime.into(),
+                modified: info.modify_datetime.into(),
             }
         })
     }

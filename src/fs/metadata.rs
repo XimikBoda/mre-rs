@@ -1,14 +1,14 @@
 use crate::fs::path::{Path};
 use crate::fs::attributes::FileAttributes;
 use crate::ffi::fs::*;
-use crate::ffi::time::vm_time_t;
+use crate::time::datetime::DateTime;
 
 #[derive(Clone, Debug)]
 pub struct Metadata {
     pub size: u32,
     pub attributes: FileAttributes,
-    pub created: vm_time_t,
-    pub modified: vm_time_t,
+    pub created: DateTime,
+    pub modified: DateTime,
 }
 
 impl Metadata {
@@ -36,7 +36,7 @@ pub fn metadata(path: &Path) -> Result<Metadata, i32> {
     Ok(Metadata {
         size: info.filesize,
         attributes: FileAttributes(info.attributes),
-        created: info.create_datetime,
-        modified: info.modify_datetime,
+        created: info.create_datetime.into(),
+        modified: info.modify_datetime.into(),
     })
 }
