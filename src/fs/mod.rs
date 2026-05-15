@@ -4,3 +4,4 @@ pub mod metadata;
 pub mod readdir;
 pub mod fs;
 pub mod copy;
+pub mod file;
