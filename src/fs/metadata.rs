@@ -1,4 +1,4 @@
-use crate::fs::path::{Path, from_ucs2};
+use crate::fs::path::{Path};
 use crate::fs::attributes::FileAttributes;
 use crate::sys::fs::*;
 
@@ -24,13 +24,13 @@ pub fn metadata(path: &Path) -> Result<Metadata, i32> {
     let ucs2_path = path.as_mre_str();
     let mut info: vm_fileinfo_ext = unsafe { core::mem::zeroed() };
 
-    let handle = vm_find_first_ext(ucs2_path.as_ptr(), &mut info);
+    let handle = unsafe{ vm_find_first_ext(ucs2_path.as_ptr(), &mut info) };
 
     if handle < 0 {
         return Err(handle);
     }
 
-    vm_find_close_ext(handle);
+    unsafe{ vm_find_close_ext(handle) };
 
     Ok(Metadata {
         size: info.filesize,

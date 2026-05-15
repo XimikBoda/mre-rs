@@ -27,7 +27,7 @@ impl Iterator for ReadDir {
             first 
         } else {
             let mut next_info: vm_fileinfo_ext = unsafe { core::mem::zeroed() };
-            let res = vm_find_next_ext(self.handle, &mut next_info);
+            let res = unsafe{ vm_find_next_ext(self.handle, &mut next_info) };
             
             if res < 0 {
                 self.is_finished = true;
@@ -53,7 +53,7 @@ impl Iterator for ReadDir {
 impl Drop for ReadDir {
     fn drop(&mut self) {
         if self.handle >= 0 {
-            vm_find_close_ext(self.handle);
+            unsafe{ vm_find_close_ext(self.handle) };
         }
     }
 }
@@ -67,7 +67,7 @@ pub fn read_dir_masked(path: &Path, mask: &str) -> Result<ReadDir, i32> {
     let ucs2_path = search_path.as_mre_str();
     
     let mut info: vm_fileinfo_ext = unsafe { core::mem::zeroed() };
-    let handle = vm_find_first_ext(ucs2_path.as_ptr(), &mut info);
+    let handle = unsafe{ vm_find_first_ext(ucs2_path.as_ptr(), &mut info) };
 
     if handle < 0 {
         return Err(handle);

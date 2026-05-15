@@ -29,7 +29,7 @@ impl File {
     fn open_with_mode(path: &Path, mode: u32) -> Result<Self, i32> {
         let ucs2_path = path.as_mre_str();
         
-        let handle = vm_file_open(ucs2_path.as_ptr(), mode, 1);
+        let handle = unsafe{ vm_file_open(ucs2_path.as_ptr(), mode, 1) };
         
         if handle < 0 {
             Err(handle)
@@ -40,12 +40,14 @@ impl File {
 
     pub fn read(&mut self, buf: &mut [u8]) -> Result<usize, i32> {
         let mut nread: u32 = 0;
-        let res = vm_file_read(
-            self.handle,
-            buf.as_mut_ptr() as *mut c_void,
-            buf.len() as u32,
-            &mut nread,
-        );
+        let res = unsafe{ 
+            vm_file_read(
+                self.handle,
+                buf.as_mut_ptr() as *mut c_void,
+                buf.len() as u32,
+                &mut nread,
+            )
+        };
 
         if res < 0 {
             Err(res)
@@ -56,12 +58,14 @@ impl File {
 
     pub fn write(&mut self, buf: &[u8]) -> Result<usize, i32> {
         let mut written: u32 = 0;
-        let res = vm_file_write(
-            self.handle,
-            buf.as_ptr() as *mut c_void,
-            buf.len() as u32,
-            &mut written,
-        );
+        let res = unsafe{ 
+            vm_file_write(
+                self.handle,
+                buf.as_ptr() as *mut c_void,
+                buf.len() as u32,
+                &mut written,
+            )
+        };
 
         if res < 0 {
             Err(res)
@@ -77,34 +81,34 @@ impl File {
             SeekFrom::End(off) => (off, VM_FS_BASE_END),
         };
 
-        let res = vm_file_seek(self.handle, offset, base);
+        let res = unsafe{ vm_file_seek(self.handle, offset, base) };
         if res < 0 { Err(res) } else { Ok(()) }
     }
 
     pub fn tell(&self) -> Result<usize, i32> {
-        let res = vm_file_tell(self.handle);
+        let res = unsafe{ vm_file_tell(self.handle) };
         if res < 0 { Err(res) } else { Ok(res as usize) }
     }
 
     pub fn commit(&self) -> Result<(), i32> {
-        let res = vm_file_commit(self.handle);
+        let res = unsafe{ vm_file_commit(self.handle) };
         if res != 0 { Err(res) } else { Ok(()) }
     }
 
     pub fn is_eof(&self) -> bool {
-        let res = vm_file_is_eof(self.handle);
+        let res = unsafe{ vm_file_is_eof(self.handle) };
         res != 0
     }
 
     pub fn size(&self) -> Result<usize, i32> {
         let mut size: u32 = 0;
-        let res = vm_file_getfilesize(self.handle, &mut size);
+        let res = unsafe{ vm_file_getfilesize(self.handle, &mut size) };
         if res < 0 { Err(res) } else { Ok(size as usize) }
     }
 }
 
 impl Drop for File {
     fn drop(&mut self) {
-        vm_file_close(self.handle);
+        unsafe{ vm_file_close(self.handle) };
     }
 }

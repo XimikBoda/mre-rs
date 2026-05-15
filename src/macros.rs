@@ -25,7 +25,7 @@ macro_rules! mre_main {
 macro_rules! mre_api {
     ($name:ident($($arg:ident: $arg_ty:ty),*) -> $ret_ty:ty = $fallback:expr) => {
         #[unsafe(no_mangle)]
-        pub extern "C" fn $name($($arg: $arg_ty),*) -> $ret_ty {
+        pub unsafe extern "C" fn $name($($arg: $arg_ty),*) -> $ret_ty {
             static mut FUNC_PTR: *mut core::ffi::c_void = core::ptr::null_mut();
             
             unsafe {

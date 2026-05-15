@@ -1,3 +1,4 @@
+#![allow(non_camel_case_types)]
 use crate::mre_api;
 
 pub const MAX_APP_NAME_LEN: usize = 260;

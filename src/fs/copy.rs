@@ -95,5 +95,5 @@ where
 }
 
 pub fn abort_copy(hdl: i32) {
-    vm_file_copy_abort(hdl);
+    unsafe{ vm_file_copy_abort(hdl) };
 }

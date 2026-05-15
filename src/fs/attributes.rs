@@ -37,7 +37,7 @@ impl FileAttributes {
 
 pub fn get_attributes(path: &Path) -> Result<FileAttributes, i32> {
     let ucs2_path = path.as_mre_str();
-    let res = vm_file_get_attributes(ucs2_path.as_ptr());
+    let res = unsafe{ vm_file_get_attributes(ucs2_path.as_ptr()) };
     
     if res == -1 {
         Err(res)
@@ -51,7 +51,7 @@ pub fn set_attributes(path: &Path, attrs: FileAttributes) -> Result<(), i32> {
     
     let safe_attrs = attrs.0 & !(FileAttributes::VOLUME | FileAttributes::DIR);
     
-    let res = vm_file_set_attributes(ucs2_path.as_ptr(), safe_attrs);
+    let res = unsafe{ vm_file_set_attributes(ucs2_path.as_ptr(), safe_attrs) };
     
     if res != 0 {
         Err(res)

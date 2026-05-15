@@ -17,7 +17,7 @@ pub(crate) fn from_ucs2(ucs2: &[u16]) -> String {
 pub fn get_app_path() -> Option<Path> {
     let mut buffer = [0u16; MAX_PATH];
 
-    let result = vm_get_exec_filename(buffer.as_mut_ptr());
+    let result = unsafe{ vm_get_exec_filename(buffer.as_mut_ptr()) };
     
     if result < 0 {
         return None;
