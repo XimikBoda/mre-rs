@@ -1,6 +1,6 @@
 #![allow(non_camel_case_types)]
 use crate::mre_api;
-use crate::sys::time::vm_time_t;
+use crate::ffi::time::vm_time_t;
 
 pub const MAX_APP_NAME_LEN: usize = 260;
 

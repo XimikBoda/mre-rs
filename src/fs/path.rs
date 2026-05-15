@@ -1,6 +1,6 @@
 use alloc::string::String;
 use alloc::vec::Vec;
-use crate::sys::fs::*;
+use crate::ffi::fs::*;
 
 
 pub const MAX_PATH: usize = 260;

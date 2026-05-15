@@ -2,7 +2,7 @@ use crate::fs::path::Path;
 use crate::fs::metadata::Metadata;
 use crate::fs::attributes::FileAttributes;
 use crate::fs::path::from_ucs2;
-use crate::sys::fs::*;
+use crate::ffi::fs::*;
 
 pub struct DirEntry {
     pub path: Path,

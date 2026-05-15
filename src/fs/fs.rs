@@ -1,5 +1,5 @@
 use crate::fs::path::Path;
-use crate::sys::fs::*;
+use crate::ffi::fs::*;
 
 use crate::fs::metadata::metadata;
 

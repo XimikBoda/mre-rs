@@ -1,3 +1,5 @@
+use crate::mre_api;
+
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
 pub struct vm_time_t {

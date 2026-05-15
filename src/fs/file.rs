@@ -1,7 +1,7 @@
 use core::ffi::c_void;
 use embedded_io::{Error, ErrorKind, ErrorType, Read, Seek, SeekFrom, Write};
 use crate::fs::path::Path;
-use crate::sys::file::*;
+use crate::ffi::file::*;
 
 #[derive(Debug, Clone, Copy)]
 pub struct MreIoError(pub i32);

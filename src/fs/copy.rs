@@ -1,6 +1,6 @@
 use alloc::boxed::Box;
 use crate::fs::path::Path;
-use crate::sys::fs::*;
+use crate::ffi::fs::*;
 
 #[derive(Debug, Clone, Copy)]
 pub enum CopyStatus {

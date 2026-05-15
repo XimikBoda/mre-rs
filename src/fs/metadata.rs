@@ -1,7 +1,7 @@
 use crate::fs::path::{Path};
 use crate::fs::attributes::FileAttributes;
-use crate::sys::fs::*;
-use crate::sys::time::vm_time_t;
+use crate::ffi::fs::*;
+use crate::ffi::time::vm_time_t;
 
 #[derive(Clone, Debug)]
 pub struct Metadata {

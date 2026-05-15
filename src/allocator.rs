@@ -1,6 +1,6 @@
 use core::alloc::{GlobalAlloc, Layout};
 use core::ffi::c_void;
-use crate::sys::mem::*;
+use crate::ffi::mem::*;
 
 struct MreAllocator;
 
