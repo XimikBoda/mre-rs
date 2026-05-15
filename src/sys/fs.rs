@@ -42,3 +42,14 @@ mre_api!(vm_file_get_modify_time(filename: *const u16, modify_time: *mut vm_time
 mre_api!(vm_find_first_ext(pathname: *const u16, direntry: *mut vm_fileinfo_ext) -> i32 = -1);
 mre_api!(vm_find_next_ext(handle: i32, direntry: *mut vm_fileinfo_ext) -> i32 = -1);
 mre_api!(vm_find_close_ext(handle: i32));
+
+pub const VM_FS_MOVE_PGS_FAIL: i32 = -1;
+pub const VM_FS_MOVE_PGS_PREPARE: i32 = 0;
+pub const VM_FS_MOVE_PGS_START: i32 = 1;
+pub const VM_FS_MOVE_PGS_ING: i32 = 2;
+pub const VM_FS_MOVE_PGS_DONE: i32 = 3;
+
+pub type vm_file_copy_cb = extern "C" fn(act: i32, total: u32, completed: u32, hdl: i32) -> i32;
+
+mre_api!(vm_file_copy(dst: *const u16, src: *const u16, cb: vm_file_copy_cb) -> i32 = -1);
+mre_api!(vm_file_copy_abort(hdl: i32) -> i32 = -1);
