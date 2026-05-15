@@ -1,18 +1,8 @@
 #![allow(non_camel_case_types)]
 use crate::mre_api;
+use crate::sys::time::vm_time_t;
 
 pub const MAX_APP_NAME_LEN: usize = 260;
-
-#[repr(C)]
-#[derive(Clone, Copy, Debug)]
-pub struct vm_time_t {
-    pub year: i32,
-    pub mon: i32,
-    pub day: i32,
-    pub hour: i32,
-    pub min: i32,
-    pub sec: i32,
-}
 
 #[repr(C)]
 #[derive(Clone, Copy)]
