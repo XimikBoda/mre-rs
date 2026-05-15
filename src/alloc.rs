@@ -13,7 +13,7 @@ unsafe impl GlobalAlloc for MreAllocator {
         vm_calloc(layout.size() as i32) as *mut u8
     }
 
-    unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, new_size: usize) -> *mut u8 { 
+    unsafe fn realloc(&self, ptr: *mut u8, _layout: Layout, new_size: usize) -> *mut u8 { 
         vm_realloc(ptr as *mut c_void,  new_size as i32) as *mut u8
      }
 

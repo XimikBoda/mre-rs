@@ -1,0 +1,41 @@
+use crate::fs::path::{Path, from_ucs2};
+use crate::fs::attributes::FileAttributes;
+use crate::sys::fs::*;
+
+#[derive(Clone, Debug)]
+pub struct Metadata {
+    pub size: u32,
+    pub attributes: FileAttributes,
+    pub created: vm_time_t,
+    pub modified: vm_time_t,
+}
+
+impl Metadata {
+    pub fn is_dir(&self) -> bool {
+        self.attributes.is_dir()
+    }
+    
+    pub fn is_file(&self) -> bool {
+        !self.is_dir()
+    }
+}
+
+pub fn metadata(path: &Path) -> Result<Metadata, i32> {
+    let ucs2_path = path.as_mre_str();
+    let mut info: vm_fileinfo_ext = unsafe { core::mem::zeroed() };
+
+    let handle = vm_find_first_ext(ucs2_path.as_ptr(), &mut info);
+
+    if handle < 0 {
+        return Err(handle);
+    }
+
+    vm_find_close_ext(handle);
+
+    Ok(Metadata {
+        size: info.filesize,
+        attributes: FileAttributes(info.attributes),
+        created: info.create_datetime,
+        modified: info.modify_datetime,
+    })
+}

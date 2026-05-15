@@ -3,8 +3,7 @@
 pub mod entry;
 pub mod macros;
 
-pub use macros::*;
-
 pub mod sys;
+pub mod fs;
 
 pub mod alloc;

@@ -1,0 +1,44 @@
+use crate::mre_api;
+
+pub const MAX_APP_NAME_LEN: usize = 260;
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct vm_time_t {
+    pub year: i32,
+    pub mon: i32,
+    pub day: i32,
+    pub hour: i32,
+    pub min: i32,
+    pub sec: i32,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct vm_fileinfo_ext {
+    pub filefullname: [u16; MAX_APP_NAME_LEN],
+    pub filename: [u8; 8],
+    pub extension: [u8; 3],
+    pub attributes: u8,
+    pub create_datetime: vm_time_t,
+    pub modify_datetime: vm_time_t,
+    pub filesize: u32,
+    pub drive: u32,
+    pub stamp: u32,
+}
+
+mre_api!(vm_get_exec_filename(filename: *mut u16) -> i32 = -1);
+
+mre_api!(vm_file_delete(filename: *const u16) -> i32 = -1);
+mre_api!(vm_file_rename(oldname: *const u16, newname: *const u16) -> i32 = -1);
+mre_api!(vm_file_mkdir(dirname: *const u16) -> i32 = -1);
+mre_api!(vm_file_rmdir(dirname: *const u16) -> i32 = -1);
+
+mre_api!(vm_file_set_attributes(filename: *const u16, attributes: u8) -> i32 = -1);
+mre_api!(vm_file_get_attributes(filename: *const u16) -> i32 = -1);
+
+mre_api!(vm_file_get_modify_time(filename: *const u16, modify_time: *mut vm_time_t) -> i32 = -1);
+
+mre_api!(vm_find_first_ext(pathname: *const u16, direntry: *mut vm_fileinfo_ext) -> i32 = -1);
+mre_api!(vm_find_next_ext(handle: i32, direntry: *mut vm_fileinfo_ext) -> i32 = -1);
+mre_api!(vm_find_close_ext(handle: i32));

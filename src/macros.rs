@@ -23,7 +23,7 @@ macro_rules! mre_main {
 
 #[macro_export]
 macro_rules! mre_api {
-    ($name:ident($($arg:ident: $arg_ty:ty),*) -> $ret_ty:ty) => {
+    ($name:ident($($arg:ident: $arg_ty:ty),*) -> $ret_ty:ty = $fallback:expr) => {
         #[unsafe(no_mangle)]
         pub extern "C" fn $name($($arg: $arg_ty),*) -> $ret_ty {
             static mut FUNC_PTR: *mut core::ffi::c_void = core::ptr::null_mut();
@@ -40,13 +40,17 @@ macro_rules! mre_api {
                     let func: extern "C" fn($($arg_ty),*) -> $ret_ty = core::mem::transmute(FUNC_PTR);
                     func($($arg),*)
                 } else {
-                    core::mem::zeroed()
+                    $fallback 
                 }
             }
         }
     };
+
+    ($name:ident($($arg:ident: $arg_ty:ty),*) -> $ret_ty:ty) => {
+        $crate::mre_api!($name($($arg: $arg_ty),*) -> $ret_ty = core::mem::zeroed());
+    };
     
     ($name:ident($($arg:ident: $arg_ty:ty),*)) => {
-        $crate::mre_api!($name($($arg: $arg_ty),*) -> ());
+        $crate::mre_api!($name($($arg: $arg_ty),*) -> () = ());
     };
 }
