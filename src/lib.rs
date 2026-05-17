@@ -10,5 +10,6 @@ pub mod fs;
 pub mod time;
 pub mod app;
 pub mod process;
+pub mod msg;
 
 pub mod allocator;

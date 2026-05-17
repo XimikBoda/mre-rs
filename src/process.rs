@@ -2,6 +2,7 @@ use alloc::vec::Vec;
 use crate::ffi::pmng::*;
 use crate::ffi::ucs2::{from_ucs2};
 use crate::fs::path::Path;
+use crate::msg::MsgError;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ProcessState {
@@ -67,6 +68,8 @@ impl Process {
         Self::from_handle(handle)
     }
 
+    pub(crate) fn handle(&self) -> VM_P_HANDLE { self.0 }
+
     pub fn state(&self) -> ProcessState {
         let state = unsafe { vm_pmng_state(self.0) };
         ProcessState::from_i32(state)
@@ -89,6 +92,41 @@ impl Process {
             parent: Self::from_handle(prop.pParentHandle),
             file_path: Path::new(&path_str),
         })
+    }
+
+    pub fn send_msg(&self, msg_id: u32, wparam: i32, lparam: i32) -> Result<i32, MsgError> {
+        if let Some(current) = Process::current() {
+            if self.0 == current.0 {
+                return Err(MsgError::TargetIsSelf);
+            }
+        }
+
+        if msg_id < crate::ffi::msg::VM_MESSAGE_ID_BASE {
+            return Err(MsgError::InvalidMsgId);
+        }
+
+        let res = unsafe { crate::ffi::msg::vm_send_msg(self.0, msg_id, wparam, lparam) };
+        Ok(res)
+    }
+
+    pub fn post_msg(&self, msg_id: u32, wparam: i32, lparam: i32) -> Result<(), MsgError> {
+        if let Some(current) = Process::current() {
+            if self.0 == current.0 {
+                return Err(MsgError::TargetIsSelf);
+            }
+        }
+
+        if msg_id < crate::ffi::msg::VM_MESSAGE_ID_BASE {
+            return Err(MsgError::InvalidMsgId);
+        }
+
+        let res = unsafe { crate::ffi::msg::vm_post_msg(self.0, msg_id, wparam, lparam) };
+        
+        if res == 1 {
+            Ok(())
+        } else {
+            Err(MsgError::QueueFull)
+        }
     }
 
     pub fn spawn(path: &Path, exit_current: bool) {

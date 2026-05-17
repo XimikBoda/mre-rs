@@ -123,8 +123,16 @@ pub fn register_atexit(hook: fn()) {
 }
 
 pub fn exit() {
-    global_sysevt_router(VM_MSG_QUIT, 0);
-    unsafe { vm_exit_app() };
+    let result = crate::msg::post_task(|| {
+        global_sysevt_router(VM_MSG_QUIT, 0); 
+        
+        unsafe { vm_exit_app() };
+    });
+
+    if result.is_err() {
+        global_sysevt_router(VM_MSG_QUIT, 0);
+        unsafe { vm_exit_app() };
+    }
 }
 
 pub fn flush_screen() {

@@ -5,3 +5,4 @@ pub mod time;
 pub mod app;
 pub mod pmng;
 pub mod ucs2;
+pub mod msg;
