@@ -3,7 +3,7 @@ use crate::ffi::time::*;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Instant {
-    ticks: u32,
+    pub(crate) ticks: u32,
 }
 
 impl Instant {

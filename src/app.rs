@@ -44,7 +44,7 @@ static mut ATEXIT_HOOKS: [Option<fn()>; MAX_SUBSYSTEMS] = [None; MAX_SUBSYSTEMS]
 
 static mut SYS_CALLBACK_REGISTERED: bool = false;
 
-fn ensure_sys_callback() {
+pub fn ensure_sys_callback() {
     unsafe {
         if !SYS_CALLBACK_REGISTERED {
             vm_reg_sysevt_callback(global_sysevt_router);
@@ -66,6 +66,15 @@ extern "C" fn global_sysevt_router(message: i32, param: i32) {
         VM_MSG_PUSH => Event::Push,
         _ => Event::Unknown(message, param),
     };
+
+    if let Event::Create { .. } | Event::Paint | Event::Active = event {
+        crate::timer::resume_gui_timers();
+    }
+
+    if let Event::Inactive | Event::Hide = event {
+        crate::timer::suspend_gui_timers();
+    }
+
 
     if let Event::Quit = event {
         let handler_ptr = core::ptr::addr_of_mut!(APP_HANDLER);
