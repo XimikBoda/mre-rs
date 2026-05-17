@@ -1,7 +1,7 @@
 use crate::fs::path::Path;
 use crate::fs::metadata::Metadata;
 use crate::fs::attributes::FileAttributes;
-use crate::fs::path::from_ucs2;
+use crate::ffi::ucs2::from_ucs2;
 use crate::ffi::fs::*;
 
 pub struct DirEntry {

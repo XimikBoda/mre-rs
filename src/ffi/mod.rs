@@ -3,3 +3,4 @@ pub mod fs;
 pub mod file;
 pub mod time;
 pub mod app;
+pub mod ucs2;
