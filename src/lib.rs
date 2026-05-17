@@ -9,5 +9,6 @@ pub mod ffi;
 pub mod fs;
 pub mod time;
 pub mod app;
+pub mod process;
 
 pub mod allocator;

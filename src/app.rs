@@ -1,38 +1,16 @@
 use alloc::boxed::Box;
 use crate::ffi::app::*;
-use crate::fs::path::get_app_path;
+use crate::ffi::pmng::{vm_pmng_set_bg, vm_pmng_set_fg};
+use crate::process::{Process, ProcessState};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ProcessState {
-    Unload,
-    Foreground,
-    Background,
-    Starting,
-    Closing,
-    Inactive,
-    Unknown,
+pub fn current_process() -> Option<Process> {
+    Process::current()
 }
 
 pub fn current_state() -> ProcessState {
-    unsafe {
-        let handle = vm_pmng_get_current_handle();
-        
-        if handle <= 0 {
-            return ProcessState::Unknown;
-        }
-
-        let state = vm_pmng_state(handle);
-
-        match state {
-            VM_PMNG_UNLOAD => ProcessState::Unload,
-            VM_PMNG_FOREGROUND => ProcessState::Foreground,
-            VM_PMNG_BACKGROUND => ProcessState::Background,
-            VM_PMNG_STARTING => ProcessState::Starting,
-            VM_PMNG_CLOSING => ProcessState::Closing,
-            VM_PMNG_INACTIVE => ProcessState::Inactive,
-            _ => ProcessState::Unknown,
-        }
-    }
+    Process::current()
+        .map(|p| p.state())
+        .unwrap_or(ProcessState::Unknown)
 }
 
 pub fn is_active() -> bool {
@@ -159,10 +137,11 @@ pub fn set_background() -> Result<(), i32> {
 }
 
 pub fn set_foreground() -> Result<(), i32> {
-    let my_path = get_app_path().ok_or(-1)?;
+    let prop = Process::current()
+        .and_then(|p| p.property())
+        .ok_or(-1)?;
     
-    let ucs2_name = my_path.as_mre_str();
-    
+    let ucs2_name = prop.file_path.as_mre_str();
     let res = unsafe { vm_pmng_set_fg(ucs2_name.as_ptr()) };
     
     if res < 0 { Err(res) } else { Ok(()) }
