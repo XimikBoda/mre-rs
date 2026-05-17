@@ -134,17 +134,12 @@ pub fn register_atexit(hook: fn()) {
     unsafe {
         let hooks = &mut *core::ptr::addr_of_mut!(ATEXIT_HOOKS);
 
-        for slot in hooks.iter() {
-            if let Some(existing) = slot {
-                if *existing as usize == hook as usize { return; }
-            }
+        if hooks.iter().flatten().any(|&existing| existing as usize == hook as usize) {
+            return;
         }
         
-        for slot in hooks.iter_mut() {
-            if slot.is_none() {
-                *slot = Some(hook);
-                return;
-            }
+        if let Some(slot) = hooks.iter_mut().find(|slot| slot.is_none()) {
+            *slot = Some(hook);
         }
     }
 }

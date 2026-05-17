@@ -10,7 +10,7 @@ mre_api!(vm_free(ptr: *mut c_void));
 
 mre_api!(vm_global_malloc(size: u32) -> *mut c_void);
 mre_api!(vm_global_free(ptr: *mut c_void));
-mre_api!(vm_global_get_max_alloc_size() -> i32);
+mre_api!(vm_global_get_max_alloc_size() -> i32 = -1);
 
 mre_api!(vm_malloc_nc(size: i32) -> *mut c_void);
 mre_api!(vm_malloc_nc_topmost(size: i32) -> *mut c_void);
