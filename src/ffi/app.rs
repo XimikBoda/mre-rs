@@ -15,4 +15,3 @@ pub type vm_sysevt_cb = extern "C" fn(message: i32, param: i32);
 
 mre_api!(vm_reg_sysevt_callback(f: vm_sysevt_cb));
 mre_api!(vm_exit_app());
-mre_api!(vm_graphic_flush_screen());

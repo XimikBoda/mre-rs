@@ -144,10 +144,6 @@ pub fn exit() {
     }
 }
 
-pub fn flush_screen() {
-    unsafe { vm_graphic_flush_screen() };
-}
-
 pub fn set_background() -> Result<(), i32> {
     let res = unsafe { vm_pmng_set_bg() };
     if res == 0 { Ok(()) } else { Err(res) }
