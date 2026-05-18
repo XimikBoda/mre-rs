@@ -8,3 +8,4 @@ pub mod ucs2;
 pub mod msg;
 pub mod timer;
 pub mod keyboard;
+pub mod screen;
