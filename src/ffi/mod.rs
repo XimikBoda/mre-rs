@@ -12,3 +12,4 @@ pub mod screen;
 pub mod layer;
 pub mod canvas;
 pub mod image;
+pub mod shape;
