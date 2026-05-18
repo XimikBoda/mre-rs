@@ -5,3 +5,4 @@ pub mod canvas;
 pub mod image;
 pub mod shape;
 pub mod text;
+pub mod blt;
