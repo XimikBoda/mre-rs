@@ -6,5 +6,10 @@ edition = "2024"
 [lib]
 crate-type = [ "rlib" ]
 
+[features]
+default = []
+eg = ["dep:embedded-graphics"]
+
 [dependencies]
 embedded-io = "0.6"
+embedded-graphics = { version = "0.8", default-features = false, optional = true }

@@ -96,6 +96,14 @@ impl Layer {
         Ok(Self { handle, width, height })
     }
 
+    pub fn width(&self) -> i32 {
+        self.width
+    }
+
+    pub fn height(&self) -> i32 {
+        self.height
+    }
+
     #[inline]
     pub fn activate(&self) {
         unsafe { vm_graphic_active_layer(self.handle); }
