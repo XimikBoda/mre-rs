@@ -1,5 +1,6 @@
 use alloc::vec::Vec;
 use crate::ffi::layer::*;
+use crate::ffi::screen::VM_NO_TRANS_COLOR;
 use crate::graphics::color::Color;
 
 static mut LAYER_STACK: Option<Vec<i32>> = None;

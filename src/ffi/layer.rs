@@ -1,5 +1,4 @@
 use crate::mre_api;
-pub const VM_NO_TRANS_COLOR: i32 = -1;
 
 pub const VM_BASE_LAYER: i32 = 1;
 pub const VM_FAST_LAYER: i32 = 2;

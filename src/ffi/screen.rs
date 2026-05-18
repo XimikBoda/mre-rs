@@ -9,6 +9,8 @@ mre_api!(vm_graphic_reset_clip());
 
 mre_api!(vm_graphic_flush_screen());
 
+pub const VM_NO_TRANS_COLOR: i32 = -1;
+
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct vm_graphic_color {
