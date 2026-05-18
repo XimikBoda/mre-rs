@@ -154,7 +154,7 @@ fn reschedule_virtual_hw_timer(timer_type: TimerType) {
                     TimerType::Regular => vm_create_timer_ex(safe_delay, regular_timeout_router),
                 };
 
-                if new_tid > 0 {
+                if new_tid >= 0 {
                     *hw_ptr = Some(new_tid);
                 }
             }
@@ -202,7 +202,7 @@ impl Timer {
             }
         };
 
-        if tid <= 0 { return Err(TimerError::from(tid)); }
+        if tid < 0 { return Err(TimerError::from(tid)); }
 
         unsafe {
             let ptr = core::ptr::addr_of_mut!(ACTIVE_INTERVALS);
