@@ -1,4 +1,11 @@
 use crate::ffi::app::vm_exit_app;
+use core::char::decode_utf16;
+use core::fmt::{self, Write};
+
+const CRASH_FILE_PATH: [u16; 18] = [
+    'e' as u16, ':' as u16, '\\' as u16, 
+    'r' as u16, 'u' as u16, 's' as u16, 't' as u16, '_' as u16, 
+    'c' as u16, 'r' as u16, 'a' as u16, 's' as u16, 'h' as u16, '.' 
 
 pub static mut ACTIVE_JUMP_POINT: *const () = core::ptr::null();
 pub static mut ACTIVE_JUMP_CALL: Option<unsafe fn(*const (), usize)> = None;

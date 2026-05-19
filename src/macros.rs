@@ -5,6 +5,7 @@ macro_rules! mre_main {
         #[unsafe(no_mangle)]
         pub extern "C" fn _start(entry: $crate::entry::GetSymEntryFunc,   _init_array_start: usize,  _count: usize ) {
             unsafe {
+                $crate::panic::RUNTIME_START_ADDR = _start as *const () as usize;
                 $crate::entry::SYSTEM_GET_SYM_ENTRY = Some(entry);
                 $crate::protect_call!($user_main());
             }
