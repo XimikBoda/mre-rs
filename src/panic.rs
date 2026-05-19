@@ -1,4 +1,4 @@
-use crate::ffi::app::vm_exit_app;
+use core::ffi::c_void;
 use core::char::decode_utf16;
 use core::fmt::{self, Write};
 
@@ -6,11 +6,115 @@ const CRASH_FILE_PATH: [u16; 18] = [
     'e' as u16, ':' as u16, '\\' as u16, 
     'r' as u16, 'u' as u16, 's' as u16, 't' as u16, '_' as u16, 
     'c' as u16, 'r' as u16, 'a' as u16, 's' as u16, 'h' as u16, '.' 
+    as u16, 't' as u16, 'x' as u16, 't' as u16, 0
+];
+
+#[cfg(target_arch = "arm")]
+const ARCH_STR: &str = "arm";
+
+#[cfg(target_arch = "x86")]
+const ARCH_STR: &str = "x86";
 
 pub static mut ACTIVE_JUMP_POINT: *const () = core::ptr::null();
 pub static mut ACTIVE_JUMP_CALL: Option<unsafe fn(*const (), usize)> = None;
 
+pub static mut RUNTIME_START_ADDR: usize = 0;
+
+pub static mut STACK_LIMIT_ADDR: usize = 0;
+
 pub static mut PANIC_STAGE: u8 = 0;
+
+#[inline(always)]
+fn get_current_fp() -> usize {
+    #[allow(unused_assignments)]
+    let mut fp: usize = 0;
+    unsafe {
+        #[cfg(all(target_arch = "arm", not(target_feature = "thumb-mode")))]
+        core::arch::asm!("mov {}, r11", out(reg) fp);
+
+        #[cfg(all(target_arch = "arm", target_feature = "thumb-mode"))]
+        core::arch::asm!("mov {}, r7", out(reg) fp);
+
+        #[cfg(not(any(target_arch = "arm", target_arch = "x86")))]
+        { fp = 0; }
+    }
+    fp
+}
+
+#[inline(never)]
+fn check_frame_pointers_working() -> bool {
+    let parent_fp = get_current_fp();
+    
+    #[inline(never)]
+    fn inner_test(parent_fp: usize) -> bool {
+        let child_fp = get_current_fp();
+        
+        if child_fp == 0 || child_fp % 4 != 0 {
+            return false;
+        }
+        
+        unsafe {
+            let saved_parent_fp = *(child_fp as *const usize);
+            saved_parent_fp == parent_fp
+        }
+    }
+    
+    let result = inner_test(parent_fp);
+    
+    unsafe { 
+        #[cfg(any(target_arch = "arm", target_arch = "x86"))]
+        core::arch::asm!("nop"); 
+    } 
+    
+    result
+}
+
+struct AppPathZeroAlloc;
+
+impl fmt::Display for AppPathZeroAlloc {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut buffer = [0u16; 260];
+        
+        let result = unsafe { crate::ffi::fs::vm_get_exec_filename(buffer.as_mut_ptr()) };
+        
+        if result < 0 {
+            return write!(f, "unknown_path");
+        }
+
+        let len = buffer.iter().position(|&c| c == 0).unwrap_or(buffer.len());
+
+        for decoded_char in decode_utf16(buffer[..len].iter().copied()) {
+            let ch = decoded_char.unwrap_or('?');
+            write!(f, "{}", ch)?;
+        }
+        
+        Ok(())
+    }
+}
+
+struct CrashLogger {
+    handle: i32,
+}
+
+impl Write for CrashLogger {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        if self.handle < 0 {
+            return Ok(());
+        }
+
+        let mut written: u32 = 0;
+        unsafe {
+            crate::ffi::file::vm_file_write(
+                self.handle,
+                s.as_ptr() as *mut c_void,
+                s.len() as u32,
+                &mut written,
+            );
+        }
+        
+        Ok(())
+    }
+}
 
 fn soft_reset() -> ! {
     unsafe {
@@ -22,6 +126,8 @@ fn soft_reset() -> ! {
 
 fn trigger_bsod_and_exit() {
 unsafe {
+        let stack_anchor = 0usize;
+
         let _ = crate::sjlj2::catch_long_jump(|jump_point| {
             unsafe fn call_jump(jp_ptr: *const (), payload: usize) {
                 unsafe {
@@ -32,6 +138,7 @@ unsafe {
             
             ACTIVE_JUMP_POINT = &jump_point as *const _ as *const ();
             ACTIVE_JUMP_CALL = Some(call_jump);
+            STACK_LIMIT_ADDR = &stack_anchor as *const _ as usize;
             
             crate::app::run_atexit_hooks();
             
@@ -44,12 +151,12 @@ unsafe {
         
         PANIC_STAGE = 2; 
 
-        vm_exit_app();
+        crate::ffi::app::vm_exit_app();
     }
 }
 
 #[panic_handler]
-fn panic(_info: &core::panic::PanicInfo) -> ! {
+fn panic(info: &core::panic::PanicInfo) -> ! {
     unsafe {
         if PANIC_STAGE >= 2 {
             soft_reset();
@@ -58,7 +165,65 @@ fn panic(_info: &core::panic::PanicInfo) -> ! {
         if PANIC_STAGE == 0 {
             PANIC_STAGE = 1;
             {
-                // TODO: 
+                let handle = crate::ffi::file::vm_file_open(
+                    CRASH_FILE_PATH.as_ptr(), 
+                    crate::ffi::file::VM_FS_MODE_CREATE_ALWAYS_WRITE, 
+                    1
+                );
+
+                if handle >= 0 {
+                    let mut logger = CrashLogger { handle };
+
+                    if let Some(location) = info.location() {
+                        let _ = write!(logger, "File:{}\nLine:{}\n", location.file(), location.line());
+                    } else {
+                        let _ = write!(logger, "File:unknown\nLine:0\n");
+                    }
+
+                    let _ = write!(logger, "App:{}\n", AppPathZeroAlloc);
+
+                    let _ = write!(logger, "Arch:{}\n", ARCH_STR);
+
+                    let start_addr = RUNTIME_START_ADDR;
+                    let _ = write!(logger, "RuntimeStart:0x{:08X}\n", start_addr);
+
+                    let limit_addr = STACK_LIMIT_ADDR;
+                
+                if !check_frame_pointers_working() {
+                    let _ = write!(logger, "Backtrace:Unavailable (Frame Pointers disabled)\n");
+                } else if limit_addr == 0 {
+                    let _ = write!(logger, "Backtrace:Unavailable (Stack limit unknown)\n");
+                } else {
+                    let mut current_fp = get_current_fp();
+                    let mut depth = 0;
+                    
+                    loop {
+                        if current_fp >= limit_addr {
+                            break;
+                        }
+                        if current_fp == 0 || current_fp % 4 != 0 {
+                            let _ = write!(logger, "Backtrace:{}:Corrupted (FP=0x{:08X})\n", depth, current_fp);
+                            break;
+                        }
+                        if depth >= 64 {
+                            let _ = write!(logger, "Backtrace:Truncated (Max depth reached)\n");
+                            break;
+                        }
+
+                        let ret_addr = *(current_fp as *const usize).add(1);
+                        let _ = write!(logger, "Backtrace:{}:0x{:08X}\n", depth, ret_addr);
+                        
+                        current_fp = *(current_fp as *const usize);
+                        depth += 1;
+                    }
+                }
+
+                    let _ = write!(logger, "Msg:{}\n", info.message());
+
+                    crate::ffi::file::vm_file_commit(handle); 
+                    
+                    crate::ffi::file::vm_file_close(handle);
+                }
             }
         } else if PANIC_STAGE == 1 {
             PANIC_STAGE = 2;
@@ -76,6 +241,8 @@ fn panic(_info: &core::panic::PanicInfo) -> ! {
 
 #[inline(always)]
 pub fn with_protection<R, F: FnOnce() -> R>(f: F) -> R {
+    let stack_anchor = 0usize;
+    
     let ret = crate::sjlj2::catch_long_jump(|jump_point| {
         unsafe fn call_jump(jp_ptr: *const (), payload: usize) {
             unsafe{
@@ -87,6 +254,7 @@ pub fn with_protection<R, F: FnOnce() -> R>(f: F) -> R {
         unsafe {
             ACTIVE_JUMP_POINT = &jump_point as *const _ as *const ();
             ACTIVE_JUMP_CALL = Some(call_jump);
+            STACK_LIMIT_ADDR = &stack_anchor as *const _ as usize;
         }
         
         let result = f();

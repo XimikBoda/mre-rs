@@ -15,6 +15,7 @@ macro_rules! mre_main {
         #[unsafe(no_mangle)]
         pub extern "cdecl" fn vm_entry(entry: $crate::entry::GetSymEntryFunc) {
             unsafe {
+                $crate::panic::RUNTIME_START_ADDR = vm_entry as *const () as usize;
                 $crate::entry::SYSTEM_GET_SYM_ENTRY = Some(entry);
                 $crate::protect_call!($user_main());
             }
