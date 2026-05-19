@@ -3,10 +3,7 @@ use crate::ffi::app::vm_exit_app;
 pub static mut ACTIVE_JUMP_POINT: *const () = core::ptr::null();
 pub static mut ACTIVE_JUMP_CALL: Option<unsafe fn(*const (), usize)> = None;
 
-static mut IS_PANICKING: bool = false;
-
-pub static mut CRASH_LOG: [u8; 512] = [0; 512];
-pub static mut CRASH_LOG_LEN: usize = 0;
+pub static mut PANIC_STAGE: u8 = 0;
 
 fn soft_reset() -> ! {
     unsafe {
@@ -17,16 +14,48 @@ fn soft_reset() -> ! {
 }
 
 fn trigger_bsod_and_exit() {
-    unsafe { vm_exit_app();}
+unsafe {
+        let _ = crate::sjlj2::catch_long_jump(|jump_point| {
+            unsafe fn call_jump(jp_ptr: *const (), payload: usize) {
+                unsafe {
+                    let jp = &*(jp_ptr as *const crate::sjlj2::JumpPoint);    
+                    jp.long_jump(payload);
+                }
+            }
+            
+            ACTIVE_JUMP_POINT = &jump_point as *const _ as *const ();
+            ACTIVE_JUMP_CALL = Some(call_jump);
+            
+            crate::app::run_atexit_hooks();
+            
+            ACTIVE_JUMP_POINT = core::ptr::null();
+            ACTIVE_JUMP_CALL = None;
+        });
+
+        ACTIVE_JUMP_POINT = core::ptr::null();
+        ACTIVE_JUMP_CALL = None;
+        
+        PANIC_STAGE = 2; 
+
+        vm_exit_app();
+    }
 }
 
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! {
     unsafe {
-        if IS_PANICKING {
+        if PANIC_STAGE >= 2 {
             soft_reset();
         }
-        IS_PANICKING = true;
+
+        if PANIC_STAGE == 0 {
+            PANIC_STAGE = 1;
+            {
+                // TODO: 
+            }
+        } else if PANIC_STAGE == 1 {
+            PANIC_STAGE = 2;
+        }
 
         if let Some(jumper_fn) = ACTIVE_JUMP_CALL {
             if !ACTIVE_JUMP_POINT.is_null() {
