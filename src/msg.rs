@@ -1,5 +1,6 @@
 use crate::ffi::msg::*;
 use crate::ffi::pmng::VM_P_HANDLE;
+use crate::mre_callback;
 use crate::process::Process;
 use alloc::collections::VecDeque;
 use alloc::boxed::Box;
@@ -31,34 +32,36 @@ fn ensure_msg_callback() {
     }
 }
 
-extern "C" fn global_msg_router(sender_handle: VM_P_HANDLE, msg_id: u32, wparam: i32, lparam: i32) -> i32 {
-    let my_handle = Process::current().map(|p| p.handle()).unwrap_or(-1);
+mre_callback! {
+    extern "C" fn global_msg_router(sender_handle: VM_P_HANDLE, msg_id: u32, wparam: i32, lparam: i32) -> i32 {
+        let my_handle = Process::current().map(|p| p.handle()).unwrap_or(-1);
 
-    if msg_id == INTERNAL_TASK_MSG_ID && sender_handle == my_handle && my_handle != 0 {
-        unsafe { 
-            *core::ptr::addr_of_mut!(PUMP_SCHEDULED) = false; 
-            
-            let queue_ptr = core::ptr::addr_of_mut!(LOCAL_TASK_QUEUE);
-            
-            if let Some(mut tasks) = (*queue_ptr).take() {
-                while let Some(task) = tasks.pop_front() {
-                    task();
+        if msg_id == INTERNAL_TASK_MSG_ID && sender_handle == my_handle && my_handle != 0 {
+            unsafe { 
+                *core::ptr::addr_of_mut!(PUMP_SCHEDULED) = false; 
+                
+                let queue_ptr = core::ptr::addr_of_mut!(LOCAL_TASK_QUEUE);
+                
+                if let Some(mut tasks) = (*queue_ptr).take() {
+                    while let Some(task) = tasks.pop_front() {
+                        task();
+                    }
                 }
             }
+            return 0;
         }
-        return 0;
-    }
 
-    unsafe {
-        let handler_ptr = core::ptr::addr_of_mut!(APP_MSG_HANDLER);
+        unsafe {
+            let handler_ptr = core::ptr::addr_of_mut!(APP_MSG_HANDLER);
 
-        if let Some(handler) = (*handler_ptr).as_mut() {
-            let sender = Process::from_handle(sender_handle);
-            return handler(sender, msg_id, wparam, lparam);
+            if let Some(handler) = (*handler_ptr).as_mut() {
+                let sender = Process::from_handle(sender_handle);
+                return handler(sender, msg_id, wparam, lparam);
+            }
         }
-    }
 
-    0
+        0
+    }
 }
 
 pub fn set_msg_handler<F>(handler: F)

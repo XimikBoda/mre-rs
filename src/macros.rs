@@ -6,7 +6,7 @@ macro_rules! mre_main {
         pub extern "C" fn _start(entry: $crate::entry::GetSymEntryFunc,   _init_array_start: usize,  _count: usize ) {
             unsafe {
                 $crate::entry::SYSTEM_GET_SYM_ENTRY = Some(entry);
-                $user_main(); 
+                $crate::protect_call!($user_main());
             }
         }
 
@@ -15,7 +15,7 @@ macro_rules! mre_main {
         pub extern "cdecl" fn vm_entry(entry: $crate::entry::GetSymEntryFunc) {
             unsafe {
                 $crate::entry::SYSTEM_GET_SYM_ENTRY = Some(entry);
-                $user_main(); 
+                $crate::protect_call!($user_main());
             }
         }
     };

@@ -13,5 +13,8 @@ pub mod process;
 pub mod msg;
 pub mod timer;
 pub mod graphics;
+pub mod panic;
 
 pub mod allocator;
+
+pub extern crate sjlj2;

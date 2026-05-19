@@ -1,4 +1,5 @@
 use alloc::boxed::Box;
+use crate::mre_callback;
 use crate::ffi::app::*;
 use crate::ffi::pmng::{vm_pmng_set_bg, vm_pmng_set_fg};
 use crate::process::{Process, ProcessState};
@@ -53,51 +54,47 @@ pub fn ensure_sys_callback() {
     }
 }
 
-extern "C" fn global_sysevt_router(message: i32, param: i32) {
-    let event = match message {
-        VM_MSG_CREATE => Event::Create { param },
-        VM_MSG_PAINT => Event::Paint,
-        VM_MSG_ACTIVE => Event::Active,
-        VM_MSG_INACTIVE => Event::Inactive,
-        VM_MSG_HIDE => Event::Hide,
-        VM_MSG_QUIT => Event::Quit,
-        VM_MSG_CARD_PLUG_OUT => Event::CardPlugOut,
-        VM_MSG_SCREEN_ROTATE => Event::ScreenRotate,
-        VM_MSG_PUSH => Event::Push,
-        _ => Event::Unknown(message, param),
-    };
+mre_callback! {
+    extern "C" fn global_sysevt_router(message: i32, param: i32) {
+        let event = match message {
+            VM_MSG_CREATE => Event::Create { param },
+            VM_MSG_PAINT => Event::Paint,
+            VM_MSG_ACTIVE => Event::Active,
+            VM_MSG_INACTIVE => Event::Inactive,
+            VM_MSG_HIDE => Event::Hide,
+            VM_MSG_QUIT => Event::Quit,
+            VM_MSG_CARD_PLUG_OUT => Event::CardPlugOut,
+            VM_MSG_SCREEN_ROTATE => Event::ScreenRotate,
+            VM_MSG_PUSH => Event::Push,
+            _ => Event::Unknown(message, param),
+        };
 
-    if let Event::Create { .. } | Event::Paint | Event::Active = event {
-        crate::timer::resume_gui_timers();
-    }
-
-    if let Event::Inactive | Event::Hide = event {
-        crate::timer::suspend_gui_timers();
-    }
-
-
-    if let Event::Quit = event {
-        let handler_ptr = core::ptr::addr_of_mut!(APP_HANDLER);
-
-        let handler_opt = unsafe { core::ptr::replace(handler_ptr, None) };
-
-        if let Some(mut handler) = handler_opt {
-            handler(Event::Quit);
+        if let Event::Create { .. } | Event::Paint | Event::Active = event {
+            crate::timer::resume_gui_timers();
         }
 
-        unsafe {
-            let hooks = &*core::ptr::addr_of!(ATEXIT_HOOKS);
-
-            for hook in hooks.iter().flatten() {
-                hook();
-            }
+        if let Event::Inactive | Event::Hide = event {
+            crate::timer::suspend_gui_timers();
         }
 
-    } else {
-        unsafe {
+
+        if let Event::Quit = event {
             let handler_ptr = core::ptr::addr_of_mut!(APP_HANDLER);
-            if let Some(handler) = (*handler_ptr).as_mut() {
-                handler(event);
+
+            let handler_opt = unsafe { core::ptr::replace(handler_ptr, None) };
+
+            if let Some(mut handler) = handler_opt {
+                handler(Event::Quit);
+            }
+
+            run_atexit_hooks();
+
+        } else {
+            unsafe {
+                let handler_ptr = core::ptr::addr_of_mut!(APP_HANDLER);
+                if let Some(handler) = (*handler_ptr).as_mut() {
+                    handler(event);
+                }
             }
         }
     }
@@ -127,6 +124,16 @@ pub fn register_atexit(hook: fn()) {
         
         if let Some(slot) = hooks.iter_mut().find(|slot| slot.is_none()) {
             *slot = Some(hook);
+        }
+    }
+}
+
+pub fn run_atexit_hooks() {
+    unsafe {
+        let hooks = &*core::ptr::addr_of!(ATEXIT_HOOKS);
+
+        for hook in hooks.iter().flatten() {
+            hook();
         }
     }
 }

@@ -1,5 +1,6 @@
 use alloc::boxed::Box;
 use alloc::vec::Vec;
+use crate::mre_callback;
 use crate::ffi::timer::*;
 use crate::time::instant::Instant;
 use crate::app::ensure_sys_callback;
@@ -61,12 +62,16 @@ fn time_left(target_ticks: u32, now_ticks: u32) -> u32 {
     if diff > 0x7FFFFFFF { 0 } else { diff }
 }
 
-extern "C" fn gui_interval_router(tid: i32) { 
-    process_interval(tid, TimerType::Gui); 
+mre_callback! {
+    extern "C" fn gui_interval_router(tid: i32) { 
+        process_interval(tid, TimerType::Gui); 
+    }
 }
 
-extern "C" fn regular_interval_router(tid: i32) { 
-    process_interval(tid, TimerType::Regular); 
+mre_callback! {
+    extern "C" fn regular_interval_router(tid: i32) { 
+        process_interval(tid, TimerType::Regular); 
+    }
 }
 
 fn process_interval(tid: i32, timer_type: TimerType) {
@@ -80,20 +85,24 @@ fn process_interval(tid: i32, timer_type: TimerType) {
     }
 }
 
-extern "C" fn gui_timeout_router(tid: i32) { 
-    unsafe { 
-        vm_delete_timer(tid); 
-        *core::ptr::addr_of_mut!(CURRENT_GUI_HW) = None;
+mre_callback! {
+    extern "C" fn gui_timeout_router(tid: i32) { 
+        unsafe { 
+            vm_delete_timer(tid); 
+            *core::ptr::addr_of_mut!(CURRENT_GUI_HW) = None;
+        }
+        process_timeouts(TimerType::Gui); 
     }
-    process_timeouts(TimerType::Gui); 
 }
 
-extern "C" fn regular_timeout_router(tid: i32) { 
-    unsafe { 
-        vm_delete_timer_ex(tid); 
-        *core::ptr::addr_of_mut!(CURRENT_REGULAR_HW) = None;
+mre_callback! {
+    extern "C" fn regular_timeout_router(tid: i32) { 
+        unsafe { 
+            vm_delete_timer_ex(tid); 
+            *core::ptr::addr_of_mut!(CURRENT_REGULAR_HW) = None;
+        }
+        process_timeouts(TimerType::Regular); 
     }
-    process_timeouts(TimerType::Regular); 
 }
 
 fn process_timeouts(timer_type: TimerType) {
