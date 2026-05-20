@@ -14,6 +14,7 @@ pub mod msg;
 pub mod timer;
 pub mod graphics;
 pub mod panic;
+pub mod task;
 pub mod keyboard;
 
 pub mod allocator;

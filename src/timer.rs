@@ -1,5 +1,10 @@
 use alloc::boxed::Box;
 use alloc::vec::Vec;
+use alloc::rc::Rc;
+use core::future::Future;
+use core::pin::Pin;
+use core::task::{Context, Poll};
+use core::cell::Cell;
 use crate::mre_callback;
 use crate::ffi::timer::*;
 use crate::time::instant::Instant;
@@ -282,5 +287,49 @@ impl Drop for Timer {
                 }
             }
         }
+    }
+}
+
+pub struct Delay {
+    delay_ms: u32,
+    timer_type: TimerType,
+    started: bool,
+    done: Rc<Cell<bool>>, 
+}
+
+impl Future for Delay {
+    type Output = ();
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        if self.done.get() {
+            return Poll::Ready(());
+        }
+        if !self.started {
+            self.started = true;
+            let waker = cx.waker().clone();
+            let done_flag = self.done.clone();
+            Timer::timeout(self.delay_ms, self.timer_type, move || {
+                done_flag.set(true);
+                waker.wake();
+            });
+        }
+        Poll::Pending
+    }
+}
+
+pub fn delay_gui(ms: u32) -> Delay {
+    Delay {
+        delay_ms: ms,
+        timer_type: TimerType::Gui,
+        started: false,
+        done: Rc::new(Cell::new(false)),
+    }
+}
+
+pub fn delay(ms: u32) -> Delay {
+    Delay {
+        delay_ms: ms,
+        timer_type: TimerType::Regular,
+        started: false,
+        done: Rc::new(Cell::new(false)),
     }
 }
