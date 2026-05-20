@@ -1,6 +1,6 @@
 use alloc::boxed::Box;
 use crate::ffi::keyboard::*;
-use crate::time::Instant;
+use crate::time::instant::Instant;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum KeyEvent {
@@ -152,7 +152,7 @@ static mut CALLBACK_REGISTERED: bool = false;
 
 #[inline(always)]
 fn key_to_index(keycode: KeyCode) -> Option<usize> {
-    let index = keycode + 10;
+    let index = keycode.0 + 10;
     if index >= 0 && (index as usize) < MAX_KEYS {
         Some(index as usize)
     } else {
@@ -166,7 +166,7 @@ extern "C" fn global_key_router(event: i32, keycode: i32) {
     let key = KeyCode(keycode);
 
     unsafe {
-        if let Some(idx) = key_to_index(keycode) {
+        if let Some(idx) = key_to_index(KeyCode(keycode)) {
             let states_ptr = core::ptr::addr_of_mut!(KEY_STATES);
             let state = &mut (*states_ptr)[idx];
 
@@ -208,11 +208,7 @@ fn ensure_registered() {
 
 pub fn init(mode: KeypadMode) -> Result<(), i32> {
     unsafe {
-        let reg_ptr = core::ptr::addr_of_mut!(CALLBACK_REGISTERED);
-        if !*reg_ptr {
-            vm_reg_keyboard_callback(global_key_router);
-            *reg_ptr = true;
-        }
+        ensure_registered();
         
         let res = vm_kbd_set_mode(mode as u8);
         if res == 0 {
