@@ -16,6 +16,7 @@ pub mod graphics;
 pub mod panic;
 pub mod task;
 pub mod keyboard;
+pub mod net;
 
 pub mod allocator;
 
