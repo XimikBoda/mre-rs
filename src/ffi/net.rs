@@ -1,5 +1,25 @@
 #![allow(non_snake_case)]
 use crate::mre_api;
+use core::ffi::c_void;
+
+pub const VM_TCP_EVT_CONNECTED: i32 = 1;
+pub const VM_TCP_EVT_CAN_WRITE: i32 = 2;
+pub const VM_TCP_EVT_CAN_READ: i32 = 3;
+pub const VM_TCP_EVT_PIPE_BROKEN: i32 = 4;
+pub const VM_TCP_EVT_HOST_NOT_FOUND: i32 = 5;
+pub const VM_TCP_EVT_PIPE_CLOSED: i32 = 6;
+
+pub const VM_TCP_ERR_NO_ENOUGH_RES: i32 = -1;
+pub const VM_TCP_ERR_CREATE_FAILED: i32 = -2;
+
+pub const VM_TCP_READ_EOF: i32 = -1;
+
+pub type VmTcpCallback = extern "C" fn(handle: i32, event: i32);
+
+mre_api!(vm_tcp_connect(host: *const u8, port: i32, apn: i32, callback: VmTcpCallback) -> i32 = -2);
+mre_api!(vm_tcp_close(handle: i32));
+mre_api!(vm_tcp_read(handle: i32, buf: *mut c_void, len: i32) -> i32 = -1);
+mre_api!(vm_tcp_write(handle: i32, buf: *const c_void, len: i32) -> i32 = -1);
 
 pub const VM_E_SOC_SUCCESS: i32 = 0;
 pub const VM_E_SOC_ERROR: i32 = -1;

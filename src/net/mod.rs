@@ -1,4 +1,5 @@
 pub mod dns;
+pub mod tcp;
 
 use crate::ffi::net::*;
 
