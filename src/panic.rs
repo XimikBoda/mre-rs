@@ -189,34 +189,34 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
 
                     let limit_addr = STACK_LIMIT_ADDR;
                 
-                if !check_frame_pointers_working() {
-                    let _ = write!(logger, "Backtrace:Unavailable (Frame Pointers disabled)\n");
-                } else if limit_addr == 0 {
-                    let _ = write!(logger, "Backtrace:Unavailable (Stack limit unknown)\n");
-                } else {
-                    let mut current_fp = get_current_fp();
-                    let mut depth = 0;
-                    
-                    loop {
-                        if current_fp >= limit_addr {
-                            break;
-                        }
-                        if current_fp == 0 || current_fp % 4 != 0 {
-                            let _ = write!(logger, "Backtrace:{}:Corrupted (FP=0x{:08X})\n", depth, current_fp);
-                            break;
-                        }
-                        if depth >= 64 {
-                            let _ = write!(logger, "Backtrace:Truncated (Max depth reached)\n");
-                            break;
-                        }
-
-                        let ret_addr = *(current_fp as *const usize).add(1);
-                        let _ = write!(logger, "Backtrace:{}:0x{:08X}\n", depth, ret_addr);
+                    if !check_frame_pointers_working() {
+                        let _ = write!(logger, "Backtrace:Unavailable (Frame Pointers disabled)\n");
+                    } else if limit_addr == 0 {
+                        let _ = write!(logger, "Backtrace:Unavailable (Stack limit unknown)\n");
+                    } else {
+                        let mut current_fp = get_current_fp();
+                        let mut depth = 0;
                         
-                        current_fp = *(current_fp as *const usize);
-                        depth += 1;
+                        loop {
+                            if current_fp >= limit_addr {
+                                break;
+                            }
+                            if current_fp == 0 || current_fp % 4 != 0 {
+                                let _ = write!(logger, "Backtrace:{}:Corrupted (FP=0x{:08X})\n", depth, current_fp);
+                                break;
+                            }
+                            if depth >= 64 {
+                                let _ = write!(logger, "Backtrace:Truncated (Max depth reached)\n");
+                                break;
+                            }
+
+                            let ret_addr = *(current_fp as *const usize).add(1);
+                            let _ = write!(logger, "Backtrace:{}:0x{:08X}\n", depth, ret_addr);
+                            
+                            current_fp = *(current_fp as *const usize);
+                            depth += 1;
+                        }
                     }
-                }
 
                     let _ = write!(logger, "Msg:{}\n", info.message());
 
