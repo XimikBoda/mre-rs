@@ -13,10 +13,11 @@ eg = ["dep:embedded-graphics"]
 [dependencies]
 embedded-io = "0.7"
 embedded-io-async = "0.7"
+embedded-tls = { version = "0.18.0", default-features = false, features = ["alloc"] }
+embedded-graphics = { version = "0.8", default-features = false, optional = true }
 
 getrandom = { version = "0.2", features = ["custom"] }
-rand_chacha = { version = "0.3", default-features = false }
+rand_chacha = { version = "0.3", default-features = false}
 rand_core = { version = "0.6", default-features = false }
 
 sjlj2 = "0.4.0"
-embedded-graphics = { version = "0.8", default-features = false, optional = true }

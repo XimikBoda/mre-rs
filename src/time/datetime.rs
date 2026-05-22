@@ -49,7 +49,7 @@ pub fn now() -> Result<DateTime, i32> {
 
 pub fn curr_utc_timestamp() -> Result<u64, i32> {
     let mut utc: u32 = 0;
-    let res = unsafe { vm_get_utc(&mut utc) };
+    let res = unsafe { vm_get_curr_utc(&mut utc) };
     
     if res < 0 { Err(res) } else { Ok(utc as u64) }
 }
