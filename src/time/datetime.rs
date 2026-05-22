@@ -47,11 +47,22 @@ pub fn now() -> Result<DateTime, i32> {
     }
 }
 
-pub fn utc_timestamp() -> Result<u64, i32> {
+pub fn curr_utc_timestamp() -> Result<u64, i32> {
     let mut utc: u32 = 0;
     let res = unsafe { vm_get_utc(&mut utc) };
     
     if res < 0 { Err(res) } else { Ok(utc as u64) }
+}
+
+pub fn utc_timestamp() -> Result<u64, i32> {
+    let local_time = curr_utc_timestamp()?; 
+
+    let tz_offset_hours = timezone();
+    let tz_offset_sec = (tz_offset_hours * 3600.0) as i64;
+
+    let real_utc = (local_time as i64).saturating_sub(tz_offset_sec);
+    
+    Ok(real_utc.max(0) as u64)
 }
 
 pub fn timezone() -> f32 {
