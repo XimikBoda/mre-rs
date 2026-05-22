@@ -17,6 +17,7 @@ pub mod panic;
 pub mod task;
 pub mod keyboard;
 pub mod net;
+pub mod entropy;
 
 pub mod allocator;
 
