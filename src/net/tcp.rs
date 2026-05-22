@@ -3,7 +3,9 @@ use alloc::ffi::CString;
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll, Waker};
-use embedded_io_async::{Error, ErrorKind, ErrorType, Read, Write};
+use embedded_io_async::{Error, ErrorKind, ErrorType};
+
+pub use embedded_io_async::{Read, Write};
 
 use crate::ffi::net::*; 
 
@@ -58,6 +60,14 @@ extern "C" fn mre_tcp_callback(handle: i32, event: i32) {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MreTcpError(pub i32);
+
+impl core::fmt::Display for MreTcpError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "MRE TCP Error code: {}", self.0)
+    }
+}
+
+impl core::error::Error for MreTcpError {}
 
 impl Error for MreTcpError {
     fn kind(&self) -> ErrorKind {

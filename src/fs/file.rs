@@ -1,10 +1,20 @@
 use core::ffi::c_void;
-use embedded_io::{Error, ErrorKind, ErrorType, Read, Seek, SeekFrom, Write};
+use embedded_io::{Error, ErrorKind, ErrorType};
 use crate::fs::path::Path;
 use crate::ffi::file::*;
 
+pub use embedded_io::{Read, Seek, SeekFrom, Write};
+
 #[derive(Debug, Clone, Copy)]
 pub struct MreIoError(pub i32);
+
+impl core::fmt::Display for MreIoError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "MRE FS Error code: {}", self.0)
+    }
+}
+
+impl core::error::Error for MreIoError {}
 
 impl Error for MreIoError {
     fn kind(&self) -> ErrorKind {

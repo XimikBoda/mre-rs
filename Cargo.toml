@@ -11,7 +11,7 @@ default = []
 eg = ["dep:embedded-graphics"]
 
 [dependencies]
-embedded-io = "0.6"
-embedded-io-async = "0.6"
+embedded-io = "0.7"
+embedded-io-async = "0.7"
 sjlj2 = "0.4.0"
 embedded-graphics = { version = "0.8", default-features = false, optional = true }
