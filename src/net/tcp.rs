@@ -4,10 +4,12 @@ use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll, Waker};
 use embedded_io_async::{Error, ErrorKind, ErrorType};
+use embedded_nal_async::TcpConnect;
+use core::net::SocketAddr;
+use crate::ffi::net::*; 
 
 pub use embedded_io_async::{Read, Write};
 
-use crate::ffi::net::*; 
 
 #[derive(Default)]
 struct SocketState {
@@ -269,5 +271,18 @@ impl<'a> Future for TcpWriteFuture<'a> {
             state.write_waker = Some(cx.waker().clone());
             Poll::Pending
         }
+    }
+}
+
+pub struct MreTcpStack;
+
+impl TcpConnect for MreTcpStack {
+    type Error = MreTcpError;
+    type Connection<'a> = TcpStream where Self: 'a;
+
+    async fn connect<'a>(&'a self, remote: SocketAddr) -> Result<Self::Connection<'a>, Self::Error> {
+        let host_str = alloc::format!("{}", remote.ip());
+        
+        TcpStream::connect(&host_str, remote.port(), 1).await
     }
 }

@@ -15,6 +15,8 @@ embedded-io = "0.7"
 embedded-io-async = "0.7"
 embedded-tls = { version = "0.18.0", default-features = false, features = ["alloc"] }
 embedded-graphics = { version = "0.8", default-features = false, optional = true }
+embedded-nal-async = "0.9.0"
+
 
 getrandom = { version = "0.2", features = ["custom"] }
 rand_chacha = { version = "0.3", default-features = false}

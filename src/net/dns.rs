@@ -5,9 +5,10 @@ use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll, Waker};
 use alloc::ffi::CString;
+use core::net::{Ipv4Addr, IpAddr};
+use embedded_nal_async::{AddrType, Dns};
 
 use crate::ffi::net::*;
-use super::Ipv4Addr;
 
 struct QueuedDnsRequest {
     apn: i32,
@@ -41,11 +42,15 @@ extern "C" fn mre_dns_callback(result_ptr: *mut vm_soc_dns_result) -> i32 {
     0
 }
 
+pub fn ipv4_from_vmuint(addr: u32) -> Ipv4Addr {
+    Ipv4Addr::from(addr.to_le_bytes()) 
+}
+
 fn parse_dns_result(raw: vm_soc_dns_result) -> Result<Vec<Ipv4Addr>, i32> {
     if raw.num > 0 {
         let mut ips = Vec::with_capacity(raw.num as usize);
         for i in 0..raw.num as usize {
-            ips.push(Ipv4Addr::from_vmuint(raw.address[i]));
+            ips.push(ipv4_from_vmuint(raw.address[i]));
         }
         Ok(ips)
     } else {
@@ -140,5 +145,39 @@ impl Future for DnsResolver {
                 }
             }
         }
+    }
+}
+
+pub struct MreDnsStack;
+
+#[derive(Debug)]
+pub struct MreDnsError(pub i32);
+
+impl Dns for MreDnsStack {
+    type Error = MreDnsError;
+
+    async fn get_host_by_name(
+        &self,
+        host: &str,
+        _addr_type: AddrType,
+    ) -> Result<IpAddr, Self::Error> {
+        if let Ok(ip) = host.parse::<Ipv4Addr>() {
+            return Ok(IpAddr::V4(ip));
+        }
+
+        let ips = resolve_host(1, host).await.map_err(MreDnsError)?;
+        
+        ips.into_iter()
+            .next()
+            .map(IpAddr::V4)
+            .ok_or(MreDnsError(-1))
+    }
+
+    async fn get_host_by_address(
+        &self,
+        _addr: IpAddr,
+        result: &mut [u8],
+    ) -> Result<usize, Self::Error> {
+        Err(MreDnsError(-2))
     }
 }

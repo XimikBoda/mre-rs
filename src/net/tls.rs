@@ -42,7 +42,7 @@ impl TlsStream {
 
         getrandom::getrandom(&mut seed).unwrap();
 
-        let mut rng = ChaCha20Rng::from_seed(seed);
+        let rng = ChaCha20Rng::from_seed(seed);
 
         let mut provider = UnsecureProvider::new::<Aes128GcmSha256>(rng);
 
