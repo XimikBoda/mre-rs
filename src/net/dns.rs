@@ -17,6 +17,7 @@ struct QueuedDnsRequest {
 }
 
 static mut DNS_IS_BUSY: bool = false;
+static mut DNS_DONE: bool = false;
 static mut DNS_WAKER: Option<Waker> = None;
 static mut DNS_RESULT: vm_soc_dns_result = vm_soc_dns_result {
     address: [0; 5],
@@ -30,6 +31,8 @@ extern "C" fn mre_dns_callback(result_ptr: *mut vm_soc_dns_result) -> i32 {
         if !result_ptr.is_null() {
             DNS_RESULT = *result_ptr;
         }
+
+        DNS_DONE = true;
 
         let waker_ptr = core::ptr::addr_of_mut!(DNS_WAKER);
 
@@ -61,16 +64,21 @@ fn parse_dns_result(raw: vm_soc_dns_result) -> Result<Vec<Ipv4Addr>, i32> {
 unsafe fn start_mre_dns_request(apn: i32, host: &str, waker: Waker) {
     unsafe {
         DNS_IS_BUSY = true;
+        DNS_DONE = false;
         DNS_WAKER = Some(waker);
         let c_host = CString::new(host).unwrap();
         let res =  vm_soc_get_host_by_name(apn, c_host.as_ptr() as *const u8, &raw mut DNS_RESULT, mre_dns_callback);
         
-        let waker_ptr = core::ptr::addr_of_mut!(DNS_WAKER);
+        if res != -2 {
+            DNS_DONE = true;
 
-        let waker_opt = core::ptr::replace(waker_ptr, None);
+            let waker_ptr = core::ptr::addr_of_mut!(DNS_WAKER);
 
-        if res == 0 || res != -2 {
-            if let Some(w) = waker_opt { w.wake(); }
+            let waker_opt = core::ptr::replace(waker_ptr, None);
+
+            if let Some(w) = waker_opt { 
+                w.wake(); 
+            }
         }
     }
 }
@@ -130,16 +138,20 @@ impl Future for DnsResolver {
                 },
                 
                 ResolverState::WaitingForCallback => {
+                    if !DNS_DONE {
+                        DNS_WAKER = Some(cx.waker().clone());
+                        return Poll::Pending; 
+                    }
+
                     let result = parse_dns_result(DNS_RESULT);
                     
                     DNS_IS_BUSY = false;
+                    DNS_DONE = false;
 
                     let queue = (*queue_ptr).as_mut().unwrap();
                     if let Some(next_req) = queue.pop_front() {
-                        start_mre_dns_request(next_req.apn, &next_req.host, next_req.waker.clone());
-                        next_req.waker.wake(); 
+                        start_mre_dns_request(next_req.apn, &next_req.host, next_req.waker);
                     }
-                    // ==========================================
 
                     return Poll::Ready(result);
                 }
@@ -164,6 +176,11 @@ impl Dns for MreDnsStack {
         if let Ok(ip) = host.parse::<Ipv4Addr>() {
             return Ok(IpAddr::V4(ip));
         }
+        let clean_host = host;
+
+        if let Ok(ip) = clean_host.parse::<Ipv4Addr>() {
+            return Ok(IpAddr::V4(ip));
+        }
 
         let ips = resolve_host(1, host).await.map_err(MreDnsError)?;
         
@@ -176,7 +193,7 @@ impl Dns for MreDnsStack {
     async fn get_host_by_address(
         &self,
         _addr: IpAddr,
-        result: &mut [u8],
+        _result: &mut [u8],
     ) -> Result<usize, Self::Error> {
         Err(MreDnsError(-2))
     }
