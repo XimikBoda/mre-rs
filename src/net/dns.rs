@@ -9,6 +9,7 @@ use core::net::{Ipv4Addr, IpAddr};
 use embedded_nal_async::{AddrType, Dns};
 
 use crate::ffi::net::*;
+use crate::mre_callback;
 
 struct QueuedDnsRequest {
     apn: i32,
@@ -26,23 +27,25 @@ static mut DNS_RESULT: vm_soc_dns_result = vm_soc_dns_result {
 };
 static mut DNS_QUEUE: Option<VecDeque<QueuedDnsRequest>> = None;
 
-extern "C" fn mre_dns_callback(result_ptr: *mut vm_soc_dns_result) -> i32 {
-    unsafe {
-        if !result_ptr.is_null() {
-            DNS_RESULT = *result_ptr;
+mre_callback! {
+    extern "C" fn mre_dns_callback(result_ptr: *mut vm_soc_dns_result) -> i32 {
+        unsafe {
+            if !result_ptr.is_null() {
+                DNS_RESULT = *result_ptr;
+            }
+
+            DNS_DONE = true;
+
+            let waker_ptr = core::ptr::addr_of_mut!(DNS_WAKER);
+
+            let waker_opt = core::ptr::replace(waker_ptr, None);
+
+            if let Some(waker) = waker_opt {
+                waker.wake();
+            }
         }
-
-        DNS_DONE = true;
-
-        let waker_ptr = core::ptr::addr_of_mut!(DNS_WAKER);
-
-        let waker_opt = core::ptr::replace(waker_ptr, None);
-
-        if let Some(waker) = waker_opt {
-            waker.wake();
-        }
+        0
     }
-    0
 }
 
 pub fn ipv4_from_vmuint(addr: u32) -> Ipv4Addr {

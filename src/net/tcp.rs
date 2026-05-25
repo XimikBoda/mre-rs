@@ -7,6 +7,7 @@ use embedded_io_async::{Error, ErrorKind, ErrorType};
 use embedded_nal_async::TcpConnect;
 use core::net::SocketAddr;
 use crate::ffi::net::*; 
+use crate::mre_callback;
 
 pub use embedded_io_async::{Read, Write};
 
@@ -26,34 +27,36 @@ struct SocketState {
 
 static mut TCP_MANAGER: Option<BTreeMap<i32, SocketState>> = None;
 
-extern "C" fn mre_tcp_callback(handle: i32, event: i32) {
-    unsafe {
-        let manager_ptr = core::ptr::addr_of_mut!(TCP_MANAGER);
-        
-        if let Some(manager) = (*manager_ptr).as_mut() {
-            if let Some(state) = manager.get_mut(&handle) {
-                match event {
-                    VM_TCP_EVT_CONNECTED => {
-                        state.is_connected = true;
-                        state.can_write = true;
-                        if let Some(w) = state.connect_waker.take() { w.wake(); }
+mre_callback! {
+    extern "C" fn mre_tcp_callback(handle: i32, event: i32) {
+        unsafe {
+            let manager_ptr = core::ptr::addr_of_mut!(TCP_MANAGER);
+            
+            if let Some(manager) = (*manager_ptr).as_mut() {
+                if let Some(state) = manager.get_mut(&handle) {
+                    match event {
+                        VM_TCP_EVT_CONNECTED => {
+                            state.is_connected = true;
+                            state.can_write = true;
+                            if let Some(w) = state.connect_waker.take() { w.wake(); }
+                        }
+                        VM_TCP_EVT_CAN_READ => {
+                            state.can_read = true;
+                            if let Some(w) = state.read_waker.take() { w.wake(); }
+                        }
+                        VM_TCP_EVT_CAN_WRITE => {
+                            state.can_write = true;
+                            if let Some(w) = state.write_waker.take() { w.wake(); }
+                        }
+                        VM_TCP_EVT_PIPE_BROKEN | VM_TCP_EVT_PIPE_CLOSED | VM_TCP_EVT_HOST_NOT_FOUND => {
+                            state.is_closed = true;
+                            state.error = Some(event);
+                            if let Some(w) = state.connect_waker.take() { w.wake(); }
+                            if let Some(w) = state.read_waker.take() { w.wake(); }
+                            if let Some(w) = state.write_waker.take() { w.wake(); }
+                        }
+                        _ => {}
                     }
-                    VM_TCP_EVT_CAN_READ => {
-                        state.can_read = true;
-                        if let Some(w) = state.read_waker.take() { w.wake(); }
-                    }
-                    VM_TCP_EVT_CAN_WRITE => {
-                        state.can_write = true;
-                        if let Some(w) = state.write_waker.take() { w.wake(); }
-                    }
-                    VM_TCP_EVT_PIPE_BROKEN | VM_TCP_EVT_PIPE_CLOSED | VM_TCP_EVT_HOST_NOT_FOUND => {
-                        state.is_closed = true;
-                        state.error = Some(event);
-                        if let Some(w) = state.connect_waker.take() { w.wake(); }
-                        if let Some(w) = state.read_waker.take() { w.wake(); }
-                        if let Some(w) = state.write_waker.take() { w.wake(); }
-                    }
-                    _ => {}
                 }
             }
         }
