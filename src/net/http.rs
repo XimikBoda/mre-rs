@@ -2,18 +2,21 @@ use alloc::boxed::Box;
 use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
-use reqwless::client::{HttpClient, TlsConfig, TlsVerify};
-use reqwless::headers::ContentType;
 pub use reqwless::request::Method;
+use reqwless::headers::ContentType;
 use reqwless::request::RequestBuilder;
+use reqwless::client::HttpClient;
+
+#[cfg(feature = "json")]
 use serde::{de::DeserializeOwned, Serialize};
+
+#[cfg(feature = "https")]
+use reqwless::client::{TlsConfig, TlsVerify};
 
 use embedded_io_async::Read;
 
 use crate::net::tcp::MreTcpStack;
 use crate::net::dns::MreDnsStack;
-use crate::time::instant::Instant;
-use crate::time::datetime::utc_timestamp;
 
 pub async fn fetch(
     method: Method,
@@ -22,23 +25,44 @@ pub async fn fetch(
     body: Option<&[u8]>,
     content_type: Option<ContentType>,
 ) -> Result<Vec<u8>, String> {
+    #[cfg(feature = "https")]
+    {
+        if !crate::stack::is_on_custom_stack() {
+            return Err("FATAL: HTTPS request must be executed inside mre_callback! (custom stack)".into());
+        }
+        
+        if crate::stack::custom_stack_size() < 32 * 1024 {
+            return Err("FATAL: Custom stack is too small for HTTPS. Minimum 32KB required.".into());
+        }
+    }
+    
     let tcp_stack = MreTcpStack;
     let dns_stack = MreDnsStack;
-
+    
     let mut rx_buf = alloc::vec![0u8; 4*1024];
+
+    #[cfg(feature = "https")]
     let mut tls_read_buf = alloc::vec![0u8; 8*2048]; 
+    #[cfg(feature = "https")]
     let mut tls_write_buf = alloc::vec![0u8; 8*2048];
 
-    let seed = (Instant::now().ticks as u64) | ((utc_timestamp().unwrap_or(0) as u64) << 32);
+    #[cfg(feature = "https")]
+    let tls_config = {
+        let seed = (crate::time::instant::Instant::now().ticks as u64) | ((crate::time::datetime::utc_timestamp().unwrap_or(0) as u64) << 32);
 
-    let tls_config = TlsConfig::new(
-        seed,
-        &mut tls_read_buf,
-        &mut tls_write_buf,
-        TlsVerify::None,
-    );
+        TlsConfig::new(
+            seed,
+            &mut tls_read_buf,
+            &mut tls_write_buf,
+            TlsVerify::None,
+        )
+    };
 
+    #[cfg(feature = "https")]
     let mut client = HttpClient::new_with_tls(&tcp_stack, &dns_stack, tls_config);
+
+    #[cfg(not(feature = "https"))]
+    let mut client = HttpClient::new(&tcp_stack, &dns_stack);
 
     let mut all_headers = alloc::vec![
         ("User-Agent", "MreEngine/3.0"),
@@ -91,6 +115,7 @@ pub async fn fetch(
     Ok(body_bytes)
 }
 
+#[cfg(feature = "json")]
 pub async fn get_json<T: DeserializeOwned>(
     url: &str,
 ) -> Result<T, String> {
@@ -101,6 +126,7 @@ pub async fn get_json<T: DeserializeOwned>(
     serde_json::from_slice(&bytes).map_err(|e| format!("JSON Parse Err: {}", e))
 }
 
+#[cfg(feature = "json")]
 pub async fn post_json<Req: Serialize, Res: DeserializeOwned>(
     url: &str,
     payload: &Req

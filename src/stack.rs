@@ -24,6 +24,28 @@ pub unsafe fn init(size: usize) {
 }
 
 #[cfg(all(feature = "custom-stack", target_arch = "arm"))]
+pub fn is_on_custom_stack() -> bool {
+    unsafe {
+        let top = CUSTOM_STACK_TOP;
+        let bottom = CUSTOM_STACK_BOTTOM;
+        
+        if top == 0 {
+            return false;
+        }
+
+        let current_sp: usize;
+        core::arch::asm!("mov {}, sp", out(reg) current_sp);
+        
+        current_sp >= bottom && current_sp <= top
+    }
+}
+
+#[cfg(all(feature = "custom-stack", target_arch = "arm"))]
+pub fn custom_stack_size() -> usize {
+    unsafe { CUSTOM_STACK_TOP - CUSTOM_STACK_BOTTOM }
+}
+
+#[cfg(all(feature = "custom-stack", target_arch = "arm"))]
 #[inline(never)]
 pub unsafe fn run_on_custom_stack<R, F: FnOnce() -> R>(f: F) -> R {
     unsafe {
@@ -82,6 +104,16 @@ pub unsafe fn run_on_custom_stack<R, F: FnOnce() -> R>(f: F) -> R {
 
 #[cfg(not(all(feature = "custom-stack", target_arch = "arm")))]
 pub unsafe fn init(_size: usize) {
+}
+
+#[cfg(not(all(feature = "custom-stack", target_arch = "arm")))]
+pub fn is_on_custom_stack() -> bool {
+    true
+}
+
+#[cfg(not(all(feature = "custom-stack", target_arch = "arm")))]
+pub fn custom_stack_size() -> usize {
+    usize::MAX
 }
 
 #[cfg(not(all(feature = "custom-stack", target_arch = "arm")))]

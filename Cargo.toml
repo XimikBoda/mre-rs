@@ -10,24 +10,29 @@ crate-type = [ "rlib" ]
 default = []
 eg = ["dep:embedded-graphics"]
 custom-stack = []
+http = ["dep:reqwless"]
+tls = ["dep:embedded-tls", "dep:heapless", "dep:der"]
+https = ["http", "tls", "reqwless/embedded-tls", "custom-stack"]
+json = ["dep:serde", "dep:serde_json"]
+full-web = ["https", "json"]
 
 [dependencies]
 embedded-io = "0.7"
 embedded-io-async = "0.7"
-embedded-tls = { version = "0.18.0", default-features = false, features = ["alloc"] }
 embedded-graphics = { version = "0.8", default-features = false, optional = true }
 embedded-nal-async = "0.9.0"
 
-#reqwless = { version = "0.14", default-features = false }
-reqwless = "0.14"
-serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }
-serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
+embedded-tls = { version = "0.18.0", default-features = false, features = ["alloc"], optional = true }
+heapless = { version = "0.9.3", features = ["portable-atomic"], optional = true }
+der = { version = "0.8.0", features = ["heapless"], optional = true }
+
+reqwless = { version = "0.14", default-features = false, optional = true }
+
+serde = { version = "1.0", default-features = false, features = ["derive", "alloc"], optional = true }
+serde_json = { version = "1.0", default-features = false, features = ["alloc"], optional = true }
 
 getrandom = { version = "0.2", features = ["custom"] }
 rand_chacha = { version = "0.3", default-features = false}
 rand_core = { version = "0.6", default-features = false }
-
-heapless = { version = "0.9.3", features = ["portable-atomic"] }
-der = { version = "0.8.0", features = ["heapless"] }
 
 sjlj2 = "0.4.0"

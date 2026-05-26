@@ -1,6 +1,8 @@
 pub mod dns;
 pub mod tcp;
+#[cfg(feature = "tls")]
 pub mod tls;
+#[cfg(feature = "http")]
 pub mod http;
 
 use crate::ffi::net::*;
