@@ -1,6 +1,7 @@
 pub mod dns;
 pub mod tcp;
 pub mod tls;
+pub mod http;
 
 use crate::ffi::net::*;
 

@@ -18,9 +18,16 @@ embedded-tls = { version = "0.18.0", default-features = false, features = ["allo
 embedded-graphics = { version = "0.8", default-features = false, optional = true }
 embedded-nal-async = "0.9.0"
 
+#reqwless = { version = "0.14", default-features = false }
+reqwless = "0.14"
+serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }
+serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
 
 getrandom = { version = "0.2", features = ["custom"] }
 rand_chacha = { version = "0.3", default-features = false}
 rand_core = { version = "0.6", default-features = false }
+
+heapless = { version = "0.9.3", features = ["portable-atomic"] }
+der = { version = "0.8.0", features = ["heapless"] }
 
 sjlj2 = "0.4.0"
