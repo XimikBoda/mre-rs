@@ -1,3 +1,5 @@
+#![allow(unused_assignments)]
+#![allow(unused_unsafe)]
 use core::ffi::c_void;
 use core::char::decode_utf16;
 use core::fmt::{self, Write};
@@ -286,16 +288,21 @@ macro_rules! protect_call {
 #[macro_export]
 macro_rules! mre_callback {
     (
-        $(#[$attr:meta])* 
-        $vis:vis extern "C" fn $name:ident($($arg:ident: $arg_ty:ty),*) $(-> $ret:ty)? {
+        $(#[$attr:meta])* $vis:vis extern "C" fn $name:ident($($arg:ident: $arg_ty:ty),*) $(-> $ret:ty)? {
             $($body:tt)*
         }
     ) => {
         $(#[$attr])*
         $vis extern "C" fn $name($($arg: $arg_ty),*) $(-> $ret)? {
-            $crate::panic::with_protection(|| {
-                $($body)*
-            })
+            let __callback_logic = || {
+                $crate::panic::with_protection(|| {
+                    $($body)*
+                })
+            };
+
+            unsafe {
+                $crate::stack::run_on_custom_stack(__callback_logic)
+            }
         }
     };
 }

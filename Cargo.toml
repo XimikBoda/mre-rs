@@ -9,6 +9,7 @@ crate-type = [ "rlib" ]
 [features]
 default = []
 eg = ["dep:embedded-graphics"]
+custom-stack = []
 
 [dependencies]
 embedded-io = "0.7"
