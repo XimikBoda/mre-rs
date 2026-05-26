@@ -49,7 +49,7 @@ macro_rules! mre_callback {
             };
 
             unsafe {
-                $crate::panic::STACK_LIMIT_ADDR = &stack_anchor as *const _ as usize;
+                $crate::stack::STACK_LIMIT_ADDR = &stack_anchor as *const _ as usize;
                 $crate::stack::run_on_custom_stack(__callback_logic)
             }
         }

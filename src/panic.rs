@@ -3,6 +3,7 @@
 use core::ffi::c_void;
 use core::char::decode_utf16;
 use core::fmt::{self, Write};
+use crate::stack::{get_current_fp, check_frame_pointers_working};
 
 const CRASH_FILE_PATH: [u16; 18] = [
     'e' as u16, ':' as u16, '\\' as u16, 
@@ -22,54 +23,7 @@ pub static mut ACTIVE_JUMP_CALL: Option<unsafe fn(*const (), usize)> = None;
 
 pub static mut RUNTIME_START_ADDR: usize = 0;
 
-pub static mut STACK_LIMIT_ADDR: usize = 0;
-
 pub static mut PANIC_STAGE: u8 = 0;
-
-#[inline(always)]
-pub fn get_current_fp() -> usize {
-    #[allow(unused)]
-    let mut fp: usize = 0;
-    unsafe {
-        #[cfg(all(target_arch = "arm", not(target_feature = "thumb-mode")))]
-        core::arch::asm!("mov {}, r11", out(reg) fp);
-
-        #[cfg(all(target_arch = "arm", target_feature = "thumb-mode"))]
-        core::arch::asm!("mov {}, r7", out(reg) fp);
-
-        #[cfg(not(any(target_arch = "arm", target_arch = "x86")))]
-        { fp = 0; }
-    }
-    fp
-}
-
-#[inline(never)]
-fn check_frame_pointers_working() -> bool {
-    let parent_fp = get_current_fp();
-    
-    #[inline(never)]
-    fn inner_test(parent_fp: usize) -> bool {
-        let child_fp = get_current_fp();
-        
-        if child_fp == 0 || child_fp % 4 != 0 {
-            return false;
-        }
-        
-        unsafe {
-            let saved_parent_fp = *(child_fp as *const usize);
-            saved_parent_fp == parent_fp
-        }
-    }
-    
-    let result = inner_test(parent_fp);
-    
-    unsafe { 
-        #[cfg(any(target_arch = "arm", target_arch = "x86"))]
-        core::arch::asm!("nop"); 
-    } 
-    
-    result
-}
 
 struct AppPathZeroAlloc;
 
@@ -128,8 +82,6 @@ fn soft_reset() -> ! {
 
 fn trigger_bsod_and_exit() {
 unsafe {
-        let stack_anchor = 0usize;
-
         let _ = crate::sjlj2::catch_long_jump(|jump_point| {
             unsafe fn call_jump(jp_ptr: *const (), payload: usize) {
                 unsafe {
@@ -140,7 +92,6 @@ unsafe {
             
             ACTIVE_JUMP_POINT = &jump_point as *const _ as *const ();
             ACTIVE_JUMP_CALL = Some(call_jump);
-            STACK_LIMIT_ADDR = &stack_anchor as *const _ as usize;
             
             crate::app::run_atexit_hooks();
             
@@ -189,7 +140,7 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
                     let start_addr = RUNTIME_START_ADDR;
                     let _ = write!(logger, "RuntimeStart:0x{:08X}\n", start_addr);
 
-                    let limit_addr = STACK_LIMIT_ADDR;
+                    let limit_addr = crate::stack::STACK_LIMIT_ADDR;
                 
                     if !check_frame_pointers_working() {
                         let _ = write!(logger, "Backtrace:Unavailable (Frame Pointers disabled)\n");

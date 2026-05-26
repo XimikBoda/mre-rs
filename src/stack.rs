@@ -1,3 +1,50 @@
+#[inline(always)]
+pub fn get_current_fp() -> usize {
+    #[allow(unused)]
+    let mut fp: usize = 0;
+    unsafe {
+        #[cfg(all(target_arch = "arm", not(target_feature = "thumb-mode")))]
+        core::arch::asm!("mov {}, r11", out(reg) fp);
+
+        #[cfg(all(target_arch = "arm", target_feature = "thumb-mode"))]
+        core::arch::asm!("mov {}, r7", out(reg) fp);
+
+        #[cfg(not(any(target_arch = "arm", target_arch = "x86")))]
+        { fp = 0; }
+    }
+    fp
+}
+
+#[inline(never)]
+pub fn check_frame_pointers_working() -> bool {
+    let parent_fp = get_current_fp();
+    
+    #[inline(never)]
+    fn inner_test(parent_fp: usize) -> bool {
+        let child_fp = get_current_fp();
+        
+        if child_fp == 0 || child_fp % 4 != 0 {
+            return false;
+        }
+        
+        unsafe {
+            let saved_parent_fp = *(child_fp as *const usize);
+            saved_parent_fp == parent_fp
+        }
+    }
+    
+    let result = inner_test(parent_fp);
+    
+    unsafe { 
+        #[cfg(any(target_arch = "arm", target_arch = "x86"))]
+        core::arch::asm!("nop"); 
+    } 
+    
+    result
+}
+
+pub static mut STACK_LIMIT_ADDR: usize = 0;
+
 #[cfg(all(feature = "custom-stack", target_arch = "arm"))]
 pub static mut CUSTOM_STACK_TOP: usize = 0;
 

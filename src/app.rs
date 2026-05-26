@@ -179,7 +179,7 @@ macro_rules! mre_main {
         pub extern "C" fn _start(entry: $crate::entry::GetSymEntryFunc,   _init_array_start: usize,  _count: usize ) {
             unsafe {
                 let stack_anchor = 0usize;
-                $crate::panic::STACK_LIMIT_ADDR = &stack_anchor as *const _ as usize;
+                $crate::stack::STACK_LIMIT_ADDR = &stack_anchor as *const _ as usize;
                 $crate::panic::RUNTIME_START_ADDR = _start as *const () as usize;
                 $crate::entry::SYSTEM_GET_SYM_ENTRY = Some(entry);
 
@@ -201,7 +201,7 @@ macro_rules! mre_main {
         pub extern "cdecl" fn vm_entry(entry: $crate::entry::GetSymEntryFunc) {
             unsafe {
                 let stack_anchor = 0usize;
-                $crate::panic::STACK_LIMIT_ADDR = &stack_anchor as *const _ as usize;
+                $crate::stack::STACK_LIMIT_ADDR = &stack_anchor as *const _ as usize;
                 $crate::panic::RUNTIME_START_ADDR = vm_entry as *const () as usize;
                 $crate::entry::SYSTEM_GET_SYM_ENTRY = Some(entry);
                 $crate::panic::with_protection(|| { $user_main() })
