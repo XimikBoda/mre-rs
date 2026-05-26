@@ -17,3 +17,5 @@ pub mod text;
 pub mod blt;
 pub mod net;
 pub mod macros;
+pub mod bitstream;
+pub mod pcm;
