@@ -27,8 +27,8 @@ pub static mut STACK_LIMIT_ADDR: usize = 0;
 pub static mut PANIC_STAGE: u8 = 0;
 
 #[inline(always)]
-fn get_current_fp() -> usize {
-    #[allow(unused_assignments)]
+pub fn get_current_fp() -> usize {
+    #[allow(unused)]
     let mut fp: usize = 0;
     unsafe {
         #[cfg(all(target_arch = "arm", not(target_feature = "thumb-mode")))]
@@ -243,8 +243,6 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
 
 #[inline(always)]
 pub fn with_protection<R, F: FnOnce() -> R>(f: F) -> R {
-    let stack_anchor = 0usize;
-    
     let ret = crate::sjlj2::catch_long_jump(|jump_point| {
         unsafe fn call_jump(jp_ptr: *const (), payload: usize) {
             unsafe{
@@ -256,7 +254,6 @@ pub fn with_protection<R, F: FnOnce() -> R>(f: F) -> R {
         unsafe {
             ACTIVE_JUMP_POINT = &jump_point as *const _ as *const ();
             ACTIVE_JUMP_CALL = Some(call_jump);
-            STACK_LIMIT_ADDR = &stack_anchor as *const _ as usize;
         }
         
         let result = f();
@@ -276,33 +273,4 @@ pub fn with_protection<R, F: FnOnce() -> R>(f: F) -> R {
             unsafe { core::mem::zeroed::<R>() }
         }
     }
-}
-
-#[macro_export]
-macro_rules! protect_call {
-    ($body:expr) => {
-        $crate::panic::with_protection(|| { $body })
-    };
-}
-
-#[macro_export]
-macro_rules! mre_callback {
-    (
-        $(#[$attr:meta])* $vis:vis extern "C" fn $name:ident($($arg:ident: $arg_ty:ty),*) $(-> $ret:ty)? {
-            $($body:tt)*
-        }
-    ) => {
-        $(#[$attr])*
-        $vis extern "C" fn $name($($arg: $arg_ty),*) $(-> $ret)? {
-            let __callback_logic = || {
-                $crate::panic::with_protection(|| {
-                    $($body)*
-                })
-            };
-
-            unsafe {
-                $crate::stack::run_on_custom_stack(__callback_logic)
-            }
-        }
-    };
 }

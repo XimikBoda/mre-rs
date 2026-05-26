@@ -166,3 +166,46 @@ pub fn set_foreground() -> Result<(), i32> {
     
     if res < 0 { Err(res) } else { Ok(()) }
 }
+
+#[macro_export]
+macro_rules! mre_main {
+    ($user_main:path) => {
+        $crate::mre_main!($user_main, 0);
+    };
+
+    ($user_main:path, $stack_size:expr) => {
+        #[cfg(target_arch = "arm")]
+        #[unsafe(no_mangle)]
+        pub extern "C" fn _start(entry: $crate::entry::GetSymEntryFunc,   _init_array_start: usize,  _count: usize ) {
+            unsafe {
+                let stack_anchor = 0usize;
+                $crate::panic::STACK_LIMIT_ADDR = &stack_anchor as *const _ as usize;
+                $crate::panic::RUNTIME_START_ADDR = _start as *const () as usize;
+                $crate::entry::SYSTEM_GET_SYM_ENTRY = Some(entry);
+
+                {
+                    let size: usize = $stack_size;
+                    if size > 0 {
+                        $crate::stack::init(size);
+                    }
+                }
+
+                $crate::stack::run_on_custom_stack(|| {
+                    $crate::panic::with_protection(|| { $user_main() })
+                });
+            }
+        }
+
+        #[cfg(target_os = "windows")]
+        #[unsafe(no_mangle)]
+        pub extern "cdecl" fn vm_entry(entry: $crate::entry::GetSymEntryFunc) {
+            unsafe {
+                let stack_anchor = 0usize;
+                $crate::panic::STACK_LIMIT_ADDR = &stack_anchor as *const _ as usize;
+                $crate::panic::RUNTIME_START_ADDR = vm_entry as *const () as usize;
+                $crate::entry::SYSTEM_GET_SYM_ENTRY = Some(entry);
+                $crate::panic::with_protection(|| { $user_main() })
+            }
+        }
+    };
+}
