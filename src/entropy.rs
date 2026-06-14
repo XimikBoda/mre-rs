@@ -21,4 +21,13 @@ fn mre_custom_entropy(dest: &mut [u8]) -> Result<(), Error> {
     Ok(())
 }
 
+#[unsafe(no_mangle)]
+unsafe extern "Rust" fn __getrandom_v03_custom(
+    dest: *mut u8,
+    len: usize,
+) -> Result<(), Error> {
+    let slice = unsafe { core::slice::from_raw_parts_mut(dest, len) };
+    mre_custom_entropy(slice)
+}
+
 register_custom_getrandom!(mre_custom_entropy);
