@@ -5,11 +5,29 @@ use crate::ffi::screen::*;
 pub struct Color(pub u16);
 
 impl Color {
-    pub const BLACK: Self = Self(0x0000);
-    pub const WHITE: Self = Self(0xFFFF);
-    pub const RED: Self   = Self(0xF800);
-    pub const GREEN: Self = Self(0x07E0);
-    pub const BLUE: Self  = Self(0x001F);
+    pub const BLACK: Self      = Self(0x0000);
+    pub const WHITE: Self      = Self(0xFFFF);
+    pub const RED: Self        = Self(0xF800);
+    pub const GREEN: Self      = Self(0x07E0);
+    pub const BLUE: Self       = Self(0x001F);
+    
+    pub const YELLOW: Self     = Self(0xFFE0);
+    pub const CYAN: Self       = Self(0x07FF); 
+    pub const MAGENTA: Self    = Self(0xF81F); 
+
+    pub const GRAY: Self       = Self(0x8410);
+    pub const LIGHT_GRAY: Self = Self(0xC618);
+    pub const DARK_GRAY: Self  = Self(0x4208);
+
+    pub const ORANGE: Self     = Self(0xFD20);
+    pub const PURPLE: Self     = Self(0x8010);
+    pub const PINK: Self       = Self(0xFE19);
+    pub const BROWN: Self      = Self(0xA145);
+    pub const GOLD: Self       = Self(0xFEA0);
+
+    pub const MAROON: Self     = Self(0x8000);
+    pub const DARK_GREEN: Self = Self(0x0400);
+    pub const NAVY: Self       = Self(0x0010);
 
     #[inline]
     pub const fn from_rgb(r: u8, g: u8, b: u8) -> Self {
