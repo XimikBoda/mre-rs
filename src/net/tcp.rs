@@ -85,6 +85,7 @@ impl Error for MreTcpError {
     }
 }
 
+#[derive(Clone)]
 pub struct TcpStream {
     handle: i32,
 }
