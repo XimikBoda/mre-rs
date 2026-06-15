@@ -27,6 +27,16 @@ impl Canvas {
         self.handle
     }
 
+    #[inline]
+    pub fn width(&self) -> i32 {
+        self.width
+    }
+
+    #[inline]
+    pub fn height(&self) -> i32 {
+        self.height
+    }
+
     pub fn pixel_buffer_ptr(&self) -> *mut u8 {
         unsafe {
             let ptr = vm_graphic_get_img_buffer(self.handle, 1);

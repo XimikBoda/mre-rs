@@ -39,6 +39,17 @@ impl Color {
     }
 
     #[inline]
+    pub const fn from_rgb_rounded(r: u8, g: u8, b: u8) -> Self {
+        let r5 = (r.saturating_add(4) >> 3) as u16;
+        
+        let g6 = (g.saturating_add(2) >> 2) as u16;
+        
+        let b5 = (b.saturating_add(4) >> 3) as u16;
+        
+        Self((r5 << 11) | (g6 << 5) | b5)
+    }
+
+    #[inline]
     pub fn r(&self) -> u8 {
         ((self.0 & 0xF800) >> 8) as u8
     }
