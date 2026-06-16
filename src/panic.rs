@@ -12,6 +12,15 @@ const CRASH_FILE_PATH: [u16; 18] = [
     as u16, 't' as u16, 'x' as u16, 't' as u16, 0
 ];
 
+const CRASH_VIEWER_PATH: [u16; 29] = [
+    'e' as u16, ':' as u16, '\\' as u16, 
+    'm' as u16, 'r' as u16, 'e' as u16, '\\' as u16, 
+    'r' as u16, 'u' as u16, 's' as u16, 't' as u16, '_' as u16, 
+    'p' as u16, 'a' as u16, 'n' as u16, 'i' as u16, 'c' as u16, '_' as u16,
+    'v' as u16, 'i' as u16, 'e' as u16, 'w' as u16, 'e' as u16, 'r' as u16, '.' as u16,
+    'v' as u16, 'x' as u16, 'p' as u16, 0
+];
+
 #[cfg(target_arch = "arm")]
 const ARCH_STR: &str = "arm";
 
@@ -104,6 +113,8 @@ unsafe {
         
         PANIC_STAGE = 2; 
 
+        
+        crate::ffi::pmng::vm_start_app(CRASH_VIEWER_PATH.as_ptr(),0, 0);
         crate::ffi::app::vm_exit_app();
     }
 }

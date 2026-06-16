@@ -38,6 +38,42 @@ impl Color {
         Self((r5 << 11) | (g6 << 5) | b5)
     }
 
+    pub const fn blend(bg: Color, fg: Color, alpha: u8) -> Self {
+        if alpha == 0 { return bg; }
+        if alpha == 255 { return fg; }
+
+        let a = alpha as u16;
+        let inv_a = 255 - a;
+
+        let r = ((fg.r() as u16 * a + bg.r() as u16 * inv_a) / 255) as u8;
+        let g = ((fg.g() as u16 * a + bg.g() as u16 * inv_a) / 255) as u8;
+        let b = ((fg.b() as u16 * a + bg.b() as u16 * inv_a) / 255) as u8;
+
+        Self::from_rgb(r, g, b)
+    }
+
+    pub const fn blend_fast(bg_pixel: Color, fg_pixel: Color, alpha: u8) -> Self {
+        if alpha == 0 { return bg_pixel; }
+        if alpha >= 248 { return fg_pixel; }
+
+        let a = (alpha >> 3) as u32;
+
+        let mut fg = fg_pixel.0 as u32;
+        let mut bg = bg_pixel.0 as u32;
+
+        fg = (fg | (fg << 16)) & 0x07E0_F81F;
+        bg = (bg | (bg << 16)) & 0x07E0_F81F;
+
+        let diff = fg.wrapping_sub(bg);
+        let offset = diff.wrapping_mul(a) >> 5;
+        bg = bg.wrapping_add(offset);
+
+        bg &= 0x07E0_F81F;
+
+        Self((bg | (bg >> 16)) as u16)
+    }
+
+
     #[inline]
     pub const fn from_rgb_rounded(r: u8, g: u8, b: u8) -> Self {
         let r5 = (r.saturating_add(4) >> 3) as u16;
@@ -50,17 +86,17 @@ impl Color {
     }
 
     #[inline]
-    pub fn r(&self) -> u8 {
+    pub const fn r(&self) -> u8 {
         ((self.0 & 0xF800) >> 8) as u8
     }
 
     #[inline]
-    pub fn g(&self) -> u8 {
+    pub const fn g(&self) -> u8 {
         ((self.0 & 0x07E0) >> 3) as u8
     }
 
     #[inline]
-    pub fn b(&self) -> u8 {
+    pub const fn b(&self) -> u8 {
         ((self.0 & 0x001F) << 3) as u8
     }
 
