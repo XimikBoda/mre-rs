@@ -12,6 +12,7 @@ struct CargoManifest {
 #[derive(Deserialize)]
 struct Package {
     name: String,
+    version: String,
     metadata: Option<Metadata>,
 }
 
@@ -111,6 +112,7 @@ fn build_package(app_dir: &Path, is_simulator: bool, is_debug: bool, is_thumb: b
         .expect("Error: [package.metadata.mre] section not found in Cargo.toml");
 
     let crate_name = &manifest.package.name;
+    let version = &manifest.package.version;
     println!("\n--- Building package: {} ---", crate_name);
 
     let app_type = mre_config.app_type.unwrap_or_else(|| "vxp".to_string());
@@ -197,6 +199,7 @@ fn build_package(app_dir: &Path, is_simulator: bool, is_debug: bool, is_thumb: b
         0,
         mre_config.ram,
         &app_name,
+        &version,
         &developer,
         is_bg,
         &api_permissions,
@@ -263,6 +266,7 @@ fn pack_application(
     app_id: u32,
     ram: u32,
     app_name: &str,
+    version: &str,
     developer: &str,
     is_bg: bool,
     api_permissions: &str,
@@ -280,6 +284,7 @@ fn pack_application(
         "-tdn".to_string(), developer.to_string(),
         "-tai".to_string(), app_id.to_string(),
         "-tb".to_string(), bg_flag.to_string(),
+        "-tv".to_string(), version.to_string(),
     ];
 
     if app_type == "vsm" {
