@@ -18,6 +18,7 @@ pub mod keyboard;
 pub mod net;
 pub mod entropy;
 pub mod stack;
+pub mod sys;
 
 pub mod allocator;
 
