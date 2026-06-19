@@ -20,3 +20,4 @@ pub mod macros;
 pub mod bitstream;
 pub mod pcm;
 pub mod sys;
+pub mod res;

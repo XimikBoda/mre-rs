@@ -19,6 +19,7 @@ pub mod net;
 pub mod entropy;
 pub mod stack;
 pub mod sys;
+pub mod res;
 
 pub mod allocator;
 

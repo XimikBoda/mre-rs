@@ -240,7 +240,7 @@ fn pack_resources(res_dir: &Path, res_out: &str, sdk_path: &str) -> bool {
     }
 
     if !files.is_empty() {
-        args.push("-r".to_string());
+        args.push("-f".to_string());
         args.extend(files);
     }
 
