@@ -1,11 +1,13 @@
 use alloc::collections::BTreeMap;
 use alloc::ffi::CString;
+use alloc::string::ToString;
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll, Waker};
 use embedded_io_async::{Error, ErrorKind, ErrorType};
 use embedded_nal_async::TcpConnect;
 use core::net::SocketAddr;
+use core::net::SocketAddrV4;
 use crate::ffi::net::*; 
 use crate::mre_callback;
 
@@ -120,6 +122,10 @@ impl TcpStream {
         }
 
         TcpConnectFuture { handle: Some(handle) }.await
+    }
+
+    pub async fn connect_by_sock_addr(sock_addr: SocketAddrV4, apn: i32) -> Result<Self, MreTcpError> {
+        Self::connect(&sock_addr.ip().to_string(), sock_addr.port(), apn).await
     }
 }
 

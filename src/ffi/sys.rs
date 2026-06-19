@@ -1,5 +1,3 @@
-use core::ptr::null;
-
 use crate::mre_api;
 
 pub const MRE_SYS_SUBSCRIBER_ID: i32 = 1;
