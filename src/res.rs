@@ -1,7 +1,7 @@
 extern crate alloc;
 use alloc::vec::Vec;
 use core::ops::Deref;
-use core::slice;
+use core::{mem, slice};
 use crate::ffi::res::*;
 use crate::ffi::mem::vm_free;
 
@@ -70,9 +70,13 @@ pub fn get_resource_offset(res_name: &str) -> Option<u32> {
     }
 }
 
-pub fn read_resource_chunk(offset: u32, buffer: &mut [u8]) -> Result<(), ()> {
+pub fn read_resource_chunk<T>(offset: u32, buffer: &mut [T]) -> Result<(), ()> {
+    let byte_len = buffer.len() * mem::size_of::<T>();
+    
+    let ptr = buffer.as_mut_ptr() as *mut u8;
+
     let result = unsafe {
-        vm_resource_get_data(buffer.as_mut_ptr(), offset, buffer.len() as u32)
+        vm_resource_get_data(ptr, offset, byte_len as u32)
     };
 
     if result == 0 {
