@@ -36,3 +36,4 @@ rand_chacha = { version = "0.3", default-features = false}
 rand_core = { version = "0.6", default-features = false }
 
 sjlj2 = "0.4.0"
+log = "0.4"

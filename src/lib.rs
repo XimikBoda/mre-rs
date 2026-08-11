@@ -20,6 +20,7 @@ pub mod entropy;
 pub mod stack;
 pub mod sys;
 pub mod res;
+pub mod logger;
 
 pub mod allocator;
 

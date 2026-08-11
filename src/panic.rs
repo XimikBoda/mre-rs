@@ -81,6 +81,46 @@ impl Write for CrashLogger {
     }
 }
 
+struct PanicBuffer {
+    buffer: [u8; 256],
+    cursor: usize,
+}
+
+impl PanicBuffer {
+    pub fn new() -> Self {
+        Self {
+            buffer: [0; 256],
+            cursor: 0,
+        }
+    }
+
+    pub fn flush(&mut self) {
+        if self.cursor > 0 {
+            let end_pos = core::cmp::min(self.cursor, 255);
+            self.buffer[end_pos] = 0;
+
+            unsafe {
+                crate::ffi::sys::vm_app_log(self.buffer.as_ptr());
+            }
+            
+            self.cursor = 0;
+        }
+    }
+}
+
+impl core::fmt::Write for PanicBuffer {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        for byte in s.bytes() {
+            if self.cursor >= 255 {
+                self.flush();
+            }
+            self.buffer[self.cursor] = byte;
+            self.cursor += 1;
+        }
+        Ok(())
+    }
+}
+
 fn soft_reset() -> ! {
     unsafe {
         let soft_reset: extern "C" fn() -> ! = core::mem::transmute(0_usize as *const ());
@@ -129,6 +169,14 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
         if PANIC_STAGE == 0 {
             PANIC_STAGE = 1;
             {
+                let mut panic_logger = PanicBuffer::new();
+
+                let _ = write!(&mut panic_logger, "[FATAL PANIC] ");
+
+                let _ = write!(&mut panic_logger, "{}", info);
+
+                panic_logger.flush();
+
                 let handle = crate::ffi::file::vm_file_open(
                     CRASH_FILE_PATH.as_ptr(), 
                     crate::ffi::file::VM_FS_MODE_CREATE_ALWAYS_WRITE, 

@@ -18,3 +18,5 @@ mre_api!(vm_get_origin_release_verno(value: *mut i8, len: u32) -> u32 = 0);
 mre_api!(vm_get_device_info(info_type: i32, value: *mut i8) -> i32 = -1);
 
 mre_api!(vm_get_current_lang_country_code() -> *mut u8 = core::ptr::null_mut());
+
+mre_api!(vm_app_log(str: *const u8) -> ());
