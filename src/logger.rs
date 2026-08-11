@@ -6,16 +6,18 @@ use alloc::string::String;
 use log::{Record, Level, Metadata};
 
 pub fn app_log(msg: &str) {
-    let mut c_str = String::with_capacity(msg.len() + 1);
-    c_str.push_str(msg);
-    c_str.push('\0');
-
-    app_log_c_str(&c_str);
-}
-
-pub fn app_log_c_str(msg: &str) {
-    unsafe {
-        crate::ffi::sys::vm_app_log(msg.as_ptr());
+    if msg.ends_with('\0') {
+        unsafe {
+            crate::ffi::sys::vm_app_log(msg.as_ptr());
+        }
+    } else {
+        let mut c_str = String::with_capacity(msg.len() + 1);
+        c_str.push_str(msg);
+        c_str.push('\0');
+        
+        unsafe {
+            crate::ffi::sys::vm_app_log(c_str.as_ptr());
+        }
     }
 }
 
@@ -41,7 +43,7 @@ impl log::Log for MreLogger {
 
             let message = format!("[{}] {}:{} - {}\0", level_str, file, line, record.args());
 
-            app_log_c_str(&message);
+            app_log(&message);
         }
     }
 
