@@ -3,7 +3,7 @@ extern crate alloc;
 use alloc::format;
 use alloc::string::String;
 
-use log::{Record, Level, Metadata};
+use log::{Record, Metadata};
 
 pub fn app_log(msg: &str) {
     if msg.ends_with('\0') {
@@ -30,18 +30,10 @@ impl log::Log for MreLogger {
 
     fn log(&self, record: &Record) {
         if self.enabled(record.metadata()) {
-            let level_str = match record.level() {
-                Level::Error => "ERROR",
-                Level::Warn  => "WARN ",
-                Level::Info  => "INFO ",
-                Level::Debug => "DEBUG",
-                Level::Trace => "TRACE",
-            };
-
             let file = record.file().unwrap_or("unknown");
             let line = record.line().unwrap_or(0);
 
-            let message = format!("[{}] {}:{} - {}\0", level_str, file, line, record.args());
+            let message = format!("[{}] {}:{} - {}\0", record.level(), file, line, record.args());
 
             app_log(&message);
         }
