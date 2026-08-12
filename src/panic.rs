@@ -84,6 +84,7 @@ impl Write for CrashLogger {
 struct PanicBuffer {
     buffer: [u8; 256],
     cursor: usize,
+    prefix_len: usize
 }
 
 impl PanicBuffer {
@@ -91,7 +92,12 @@ impl PanicBuffer {
         Self {
             buffer: [0; 256],
             cursor: 0,
+            prefix_len: 0,
         }
+    }
+
+    pub fn mark_prefix(&mut self) {
+        self.prefix_len = core::cmp::min(self.cursor, 250); 
     }
 
     pub fn flush(&mut self) {
@@ -103,7 +109,7 @@ impl PanicBuffer {
                 crate::ffi::sys::vm_app_log(self.buffer.as_ptr());
             }
             
-            self.cursor = 0;
+            self.cursor = self.prefix_len;
         }
     }
 }
@@ -171,7 +177,22 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
             {
                 let mut panic_logger = PanicBuffer::new();
 
-                let _ = write!(&mut panic_logger, "[FATAL PANIC] ");
+                let date = crate::time::datetime::now().unwrap_or_default();
+
+                let (file, line) = if let Some(location) = info.location() {
+                    (location.file(), location.line())
+                } else {
+                    ("unknown", 0)
+                };
+
+                let _ = write!(
+                    &mut panic_logger,
+                    "{:04}-{:02}-{:02} {:02}:{:02}:{:02}\t1\t{}:{}\t",
+                    date.year, date.month, date.day, date.hour, date.minute, date.second,
+                    file, line
+                );
+
+                panic_logger.mark_prefix();
 
                 let _ = write!(&mut panic_logger, "{}", info);
 

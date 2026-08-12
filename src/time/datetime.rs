@@ -10,6 +10,19 @@ pub struct DateTime {
     pub second: u8,
 }
 
+impl Default for DateTime {
+    fn default() -> Self {
+        Self {
+            year: 1970,
+            month: 1,
+            day: 1,
+            hour: 0,
+            minute: 0,
+            second: 0,
+        }
+    }
+}
+
 impl From<vm_time_t> for DateTime {
     fn from(vt: vm_time_t) -> Self {
         Self {

@@ -3,7 +3,7 @@ extern crate alloc;
 use alloc::format;
 use alloc::string::String;
 
-use log::{Record, Metadata};
+use log::{Record, Metadata, Level};
 
 pub fn app_log(msg: &str) {
     if msg.ends_with('\0') {
@@ -21,6 +21,27 @@ pub fn app_log(msg: &str) {
     }
 }
 
+pub fn app_log_record(record: &Record) {
+    let level_num = match record.level() {
+        Level::Error => 2,
+        Level::Warn  => 3,
+        Level::Info  => 4,
+        Level::Debug => 5,
+        Level::Trace => 6, 
+    };
+
+    let date = crate::time::datetime::now().unwrap_or_default();
+    let file = record.file().unwrap_or("unknown");
+    let line = record.line().unwrap_or(0);
+
+    let message = format!("{:04}-{:02}-{:02} {:02}:{:02}:{:02}\t{}\t{}:{}\t{}\0", 
+            date.year, date.month, date.day, 
+            date.hour, date.minute, date.second, 
+            level_num, file, line, record.args());
+
+    app_log(&message);
+}
+
 struct MreLogger;
 
 impl log::Log for MreLogger {
@@ -30,12 +51,7 @@ impl log::Log for MreLogger {
 
     fn log(&self, record: &Record) {
         if self.enabled(record.metadata()) {
-            let file = record.file().unwrap_or("unknown");
-            let line = record.line().unwrap_or(0);
-
-            let message = format!("[{}] {}:{} - {}\0", record.level(), file, line, record.args());
-
-            app_log(&message);
+            app_log_record(record);
         }
     }
 
